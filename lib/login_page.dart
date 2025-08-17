@@ -16,11 +16,39 @@ class _LoginPageState extends State<LoginPage> {
   final emailFieldController = TextEditingController();
   final passwordFieldController = TextEditingController();
 
-  void login(
-    BuildContext context,
-    String email,
-    String password
-  ) async {
+  void forgotPassword() async {
+    String? newEmailErrorText; // new error messages (can be null)
+    String? newPasswordErrorText;
+
+    showDialog( // Show loading icon
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(child: CircularProgressIndicator())
+    );
+
+    // try/except with email and give various error codes
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: emailFieldController.text);
+      newEmailErrorText = "If this account exists, a password reset email has been sent.";
+    }
+    on FirebaseAuthException catch (e) {
+      if (e.code == "invalid-email" || e.code == "channel-error") {
+        newEmailErrorText = "Invalid email format";
+      }
+    }
+    catch (e) {
+      newEmailErrorText = "An unknown error occurred";
+    }
+
+    setState(() {
+      emailErrorText = newEmailErrorText;
+      passwordErrorText = newPasswordErrorText;
+    });
+
+    if (mounted) {Navigator.of(context).pop();} // Remove loading icon
+  }
+
+  void login(String email, String password) async {
     showDialog( // Show loading icon
       context: context,
       barrierDismissible: false,
@@ -93,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
       passwordErrorText = newPasswordErrorText;
     });
 
-    if (context.mounted) {Navigator.of(context).pop();} // Remove loading icon
+    if (mounted) {Navigator.of(context).pop();} // Remove loading icon
   }
 
   @override
@@ -102,6 +130,7 @@ class _LoginPageState extends State<LoginPage> {
       controller: emailFieldController,
       validator: (String? curValue) => emailErrorText,
       decoration: InputDecoration(
+        helperText: "", // Ensures error text space is always taken up
         prefixIcon: Icon(Icons.email),
         border: OutlineInputBorder(),
         hintText: "Email",
@@ -114,24 +143,30 @@ class _LoginPageState extends State<LoginPage> {
       validator: (String? curValue) => passwordErrorText,
       obscureText: obscureText,
       decoration: InputDecoration(
+        helperText: "",
         border: OutlineInputBorder(),
         hintText: "Password",
         errorText: passwordErrorText,
         prefixIcon: Icon(Icons.lock),
         counter: TextButton(
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero, 
+            padding: EdgeInsetsGeometry.only(left: 6, right: 6),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap
+          ),
           child: Text("Forgot password?"),
-          onPressed: () {}
+          onPressed: () => forgotPassword()
         ),
         suffixIcon: Padding(
           padding: const EdgeInsets.all(5),
           child: IconButton.outlined(
+            color: passwordErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error, // ColorScheme.of(context).onSurfaceVariant
             style: IconButton.styleFrom(
               side: BorderSide(
-                width: 5.0, 
-                color: passwordErrorText == null ? ColorScheme.of(context).onSurfaceVariant : ColorScheme.of(context).error
+                width: 2.0, 
+                color: passwordErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error
               ), 
             ),
-            splashColor: Colors.grey,
             icon: obscureText ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
             onPressed: () => setState(() => obscureText = !obscureText)
           ),
@@ -139,23 +174,51 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
 
-    final ElevatedButton loginButton = ElevatedButton( // TODO: less padding up top
-      onPressed: () => login(context, emailFieldController.text, passwordFieldController.text),
+    final ElevatedButton loginButton = ElevatedButton(
+      onPressed: () => login(emailFieldController.text, passwordFieldController.text),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: ColorScheme.of(context).primary,
+        foregroundColor: ColorScheme.of(context).surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10))  
+      ),
       child: Text("Login")
     );
 
-    return Column(
-      children: [
-        Text("Log in to continue"),
-        emailField,
-        passwordField,
-        loginButton
-      ]
+    final TextButton signupButton = TextButton(
+      style: TextButton.styleFrom(
+        minimumSize: Size.zero, 
+        padding: EdgeInsetsGeometry.only(left: 6, right: 6),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap
+      ),
+      child: Text("Sign up"),
+      onPressed: () {}
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 15, right: 15),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("Log in", style: TextStyle(fontSize: 30)),
+          SizedBox(height: 15),
+          emailField,
+          SizedBox(height: 5),
+          passwordField,
+          SizedBox(height: 10),
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: loginButton, 
+          ),
+          SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Don't have an account?"),
+              signupButton
+            ]
+          )
+        ]
+      ),
     );
   }
 }
-
-// TODO: add forgot password button
-// TODO: add signup page
-// TODO: prevent verification email spam (check last verification email date, if >= 48 hours)
-// TODO: make it look good
