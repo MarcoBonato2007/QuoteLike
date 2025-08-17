@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
       ),
       home: const MyHomePage(),
     );
@@ -47,14 +47,14 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("Quotebook"),
-      ),
       body: LoginPage()
     );
   }
 }
 
-// TODO: Login and signup page (username and password only for now)
+// TODO: add signup page
+// TODO: add client-side email format verification (don't remove the handling from firebase invalid-email though)
+// TODO: prevent verification and password reset and signup email spam (for each user, check last time they sent it)
+// TODO: Ensure all rate limit errors are handled (too-many-requests)
+// TODO: make it all look good
 // TODO: Add the quotes, searchbar, like feature
