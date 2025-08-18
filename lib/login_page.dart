@@ -1,3 +1,5 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quotebook/signup_page.dart';
@@ -13,9 +15,12 @@ class _LoginPageState extends State<LoginPage> {
   String? emailErrorText; // put here so login() and build() can both access them
   String? passwordErrorText;
   bool obscureText = true;
+  bool passwordFieldSelected = false;
 
   final emailFieldController = TextEditingController();
+  final emailFieldKey = GlobalKey<FormFieldState>();
   final passwordFieldController = TextEditingController();
+  final passwordFieldKey = GlobalKey<FormFieldState>();
 
   void forgotPassword() async {
     String? newEmailErrorText; // new error messages (can be null)
@@ -52,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
     if (mounted) {Navigator.of(context).pop();} // Remove loading icon
   }
 
-  void login(String email, String password) async {
+  Future<void> login(String email, String password) async {
     showDialog( // Show loading icon
       context: context,
       barrierDismissible: false,
@@ -62,61 +67,64 @@ class _LoginPageState extends State<LoginPage> {
     String? newEmailErrorText; // new error messages (can be null)
     String? newPasswordErrorText;
 
-    try { // attempt sign in
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password
-      );
+    if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
+      newEmailErrorText = ""; // blank so it will just highlight red
+      newPasswordErrorText = "Network error. Check your internet connection.";
+    }
+    else {
+      try { // attempt sign in through firebase and handle relevent errors
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password
+        );
 
-      // if email not verified, send verification email and show error message
-      if (!FirebaseAuth.instance.currentUser!.emailVerified) {
-        newEmailErrorText = "Email not verified. Check your inbox.";
+        // if email not verified, send verification email and show error message
+        if (!FirebaseAuth.instance.currentUser!.emailVerified) {
+          newEmailErrorText = "Email not verified. Check your inbox.";
 
-        try {
-          await FirebaseAuth.instance.currentUser!.sendEmailVerification();
-        }
-        on FirebaseAuthException catch (e) {
-          if (e.code == "too-many-requests") {
-            newEmailErrorText = "Email not verified. Servers busy, try again later.";
-          } else {
+          try {
+            await FirebaseAuth.instance.currentUser!.sendEmailVerification();
+          }
+          on FirebaseAuthException catch (e) {
+            if (e.code == "too-many-requests") {
+              newEmailErrorText = "Email not verified. Servers busy, try again later.";
+            } else {
+              newEmailErrorText = "Email not verified. An unknown error occurred, try again later.";
+            }
+          }
+          catch (e) {
             newEmailErrorText = "Email not verified. An unknown error occurred, try again later.";
           }
-        }
-        catch (e) {
-          newEmailErrorText = "Email not verified. An unknown error occurred, try again later.";
-        }
 
-        await FirebaseAuth.instance.signOut();
+          await FirebaseAuth.instance.signOut();
+        }
       }
-    }
-    on FirebaseAuthException catch (e) { // check error code and set appropriate error message
-      if (e.code == "invalid-email") {
-        newEmailErrorText = "Invalid email format";
+      on FirebaseAuthException catch (e) { // check error code and set appropriate error message
+        // As a failsafe in case the email_validator package fails
+        if (e.code == "invalid-email") {
+          newEmailErrorText = "Invalid email format";
+        }
+        else if (e.code == "user-not-found" || e.code == "wrong-password" || e.code == "invalid-credential") {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "Incorrect email or password";
+        }
+        else if (e.code == "too-many-requests") {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "Servers busy, try again later.";
+        }
+        else if (e.code == "network-request-failed") {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "Network error. Check your internet connection.";
+        }
+        else {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "An unknown error occured.";
+        }
       }
-      else if (e.code == "user-not-found" || e.code == "wrong-password" || e.code == "invalid-credential") {
+      catch (e) {
         newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "Incorrect email or password";
-      }
-      else if (e.code == "channel-error") { // email or password is blank
-        newEmailErrorText = (email == "") ? "Please enter an email" : null;
-        newPasswordErrorText = (password == "") ? "Please enter a password" : null;
-      }
-      else if (e.code == "too-many-requests") {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "Servers busy, try again later.";
-      }
-      else if (e.code == "network-request-failed") {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "Internet connection failed. Check your internet connection.";
-      }
-      else {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "An unknown error occured.";
-      }
-    }
-    catch (e) {
-      newEmailErrorText = ""; // blank so it will just highlight red
-      newPasswordErrorText = "An unknown error occured.";        
+        newPasswordErrorText = "An unknown error occured.";        
+      }     
     }
 
     setState(() {
@@ -131,8 +139,26 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final TextFormField emailField = TextFormField(
       controller: emailFieldController,
+      key: emailFieldKey,
+      onChanged: (String? currentValue) => setState(() {
+        emailErrorText = null; 
+        passwordErrorText = null;
+      }),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (String? currentValue) {
+        if (currentValue == "") {
+          return "Please enter an email";
+        }
+        if (!EmailValidator.validate(emailFieldController.text)) {
+          return "Invalid email format";
+        }
+        else {
+          return null;
+        }
+      },
       decoration: InputDecoration(
         helperText: "", // Ensures error text space is always taken up
+        errorMaxLines: 3,
         prefixIcon: Icon(Icons.email),
         border: OutlineInputBorder(),
         hintText: "Email",
@@ -142,9 +168,23 @@ class _LoginPageState extends State<LoginPage> {
 
     final TextFormField passwordField = TextFormField(
       controller: passwordFieldController,
+      key: passwordFieldKey,
+      onChanged: (String? currentValue) => setState(() {
+        emailErrorText = null; 
+        passwordErrorText = null;
+      }),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (String? currentValue) {
+        if (currentValue == "") {
+          return "Please enter a password";
+        }
+        else {
+          return null;
+        }
+      },
       obscureText: obscureText,
       decoration: InputDecoration(
-        helperText: "",
+        errorMaxLines: 3,
         border: OutlineInputBorder(),
         hintText: "Password",
         errorText: passwordErrorText,
@@ -176,7 +216,13 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     final ElevatedButton loginButton = ElevatedButton(
-      onPressed: () => login(emailFieldController.text, passwordFieldController.text),
+      onPressed: () async {
+        emailFieldKey.currentState!.validate();
+        passwordFieldKey.currentState!.validate();
+        if (emailFieldKey.currentState!.validate() && passwordFieldKey.currentState!.validate()) {
+          await login(emailFieldController.text, passwordFieldController.text);
+        }  
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: ColorScheme.of(context).primary,
         foregroundColor: ColorScheme.of(context).surface,
