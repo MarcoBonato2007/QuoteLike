@@ -52,12 +52,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// TODO: fully protect against enum attacks
+// Have client-side email format check
+// for signup, have client-side password strength check (use FirebaseAuth.instance.validatePassword())
+// Use snackbars where it's sensible instead of error messsages
+// Auto validate for email and signup password
+
 // TODO: test a lot. What do you not like? what would you change?
 
-// TODO: prevent login/signup and verification and password reset and signup email spam (for each user, check last time they sent it)
+// TODO: add client-side debouncing (prevent login/signup/forgot password button spam)
+// Prevent verification and password reset email spam
+
 // TODO: consider adding a captcha
-// TODO: Ensure all rate limit errors are handled (too-many-requests)
 // TODO: Add the quotes, searchbar, like feature, sort feature
 // TODO: make it all look good
 // TODO: ensure safety of api keys and such. Check nothing sensitive on github.
+// TODO: use appcheck to ensure no cracked clients and such

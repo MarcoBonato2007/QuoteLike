@@ -36,6 +36,9 @@ class _LoginPageState extends State<LoginPage> {
       if (e.code == "invalid-email" || e.code == "channel-error") {
         newEmailErrorText = "Invalid email format";
       }
+      else if (e.code == "too-many-requests") {
+        newEmailErrorText = "Servers busy. Try again later.";
+      }
     }
     catch (e) {
       newEmailErrorText = "An unknown error occurred";

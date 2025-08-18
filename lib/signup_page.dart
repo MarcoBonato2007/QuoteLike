@@ -84,6 +84,7 @@ class _SignupPageState extends State<SignupPage> {
 
     if (mounted) {Navigator.of(context).pop();} // Remove loading icon
 
+    // If no error messages, go back to login page, show success snackbar
     if (newEmailErrorText == null && newPasswordErrorText == null && mounted) {
       Navigator.push(
         context, 
@@ -184,7 +185,3 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 }
-
-// TODO: make it so that helper text doesn't disappear on error
-// and return to login screen
-
