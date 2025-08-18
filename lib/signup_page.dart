@@ -1,3 +1,5 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quotebook/globals.dart';
@@ -16,9 +18,11 @@ class _SignupPageState extends State<SignupPage> {
   bool obscureText = true;
 
   final emailFieldController = TextEditingController();
+  final passwordFieldKey = GlobalKey<FormFieldState>();
   final passwordFieldController = TextEditingController();
+  final emailFieldKey = GlobalKey<FormFieldState>();
 
-  void signup(String email, String password) async {
+  Future<void> signup(String email, String password) async {
     showDialog( // Show loading icon
       context: context,
       barrierDismissible: false,
@@ -28,54 +32,47 @@ class _SignupPageState extends State<SignupPage> {
     String? newEmailErrorText; // new error messages (can be null)
     String? newPasswordErrorText;
 
-    try { // attempt sign up
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password
-      );
-    }
-    on FirebaseAuthException catch (e) { // check error code and set appropriate error message
-      if (e.code == "invalid-email") {
-        newEmailErrorText = "Invalid email format";
-      }
-      else if (e.code == "weak-password" || e.code == "unknown" || e.code == "email-already-in-use") {
-        // We don't tell the user if an account already exists, this prevents an enumeration attack
-        List<String> specialCharacters = ["^", "\$", "*", ".", "[", "]", "{", "}", "(", ")", "?", '"', "!", "@", "#", "%", "&", "/", "\\", ",", ">", "<", "'", ":", ";", "|", "_", "~"];
-
-        if (!RegExp(r'[a-z]').hasMatch(password)) {
-            newPasswordErrorText = "Password must contain at least one lowercase character.";
-        }
-        else if (!RegExp(r'[A-Z]').hasMatch(password)) {
-            newPasswordErrorText = "Password must contain at least one uppercase character.";
-        }
-        else if (!RegExp(r'[0-9]').hasMatch(password)) {
-            newPasswordErrorText = "Password must contain at least one numerical digit.";
-        }
-        else if (!specialCharacters.any((String specialCharacter) => password.contains(specialCharacter))) {
-            newPasswordErrorText = "Password must contain at least one special character.";
-        }
-      }
-      else if (e.code == "too-many-requests") {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "Servers busy, try again later";
-      }
-      else if (e.code == "network-request-failed") {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "Internet connection failed. Check your internet connection.";
-      }
-      else if (e.code == "channel-error") { // email or password is blank
-        newEmailErrorText = (email == "") ? "Please enter an email" : null;
-        newPasswordErrorText = (password == "") ? "Please enter a password" : null;
-      }
-      else {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "An unknown error occurred.";
-      }
-    }
-    catch (e) {
+    if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
       newEmailErrorText = ""; // blank so it will just highlight red
-      newPasswordErrorText = "An unknown error occurred.";        
+      newPasswordErrorText = "Network error. Check your internet connection.";
     }
+    else {
+      try { // attempt sign up through firebase and handle relevent errors
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password
+        );
+      }
+      on FirebaseAuthException catch (e) { // check error code and set appropriate error message
+        if (e.code == "invalid-email") {
+          newEmailErrorText = "Invalid email format";
+        }
+        else if (e.code == "weak-password" || e.code == "unknown" || e.code == "email-already-in-use") {
+          // We don't tell the user if an account already exists, this prevents an enumeration attack
+        }
+        else if (e.code == "too-many-requests") {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "Servers busy, try again later";
+        }
+        else if (e.code == "network-request-failed") {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "Network error. Check your internet connection.";
+        }
+        else if (e.code == "channel-error") { // email or password is blank
+          newEmailErrorText = (email == "") ? "Please enter an email" : null;
+          newPasswordErrorText = (password == "") ? "Please enter a password" : null;
+        }
+        else {
+          newEmailErrorText = ""; // blank so it will just highlight red
+          newPasswordErrorText = "An unknown error occurred.";
+        }
+      }
+      catch (e) {
+        newEmailErrorText = ""; // blank so it will just highlight red
+        newPasswordErrorText = "An unknown error occurred.";        
+      }      
+    }
+
 
     setState(() {
       emailErrorText = newEmailErrorText;
@@ -98,8 +95,26 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     final TextFormField emailField = TextFormField(
       controller: emailFieldController,
+      key: emailFieldKey,
+      onChanged: (String? currentValue) => setState(() {
+        emailErrorText = null; 
+        passwordErrorText = null;
+      }),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (String? currentValue) {
+        if (currentValue == "") {
+          return "Please enter an email";
+        }
+        if (!EmailValidator.validate(emailFieldController.text)) {
+          return "Invalid email format";
+        }
+        else {
+          return null;
+        }
+      },
       decoration: InputDecoration(
         helperText: "", // Ensures error text space is always taken up
+        errorMaxLines: 3,
         prefixIcon: Icon(Icons.email),
         border: OutlineInputBorder(),
         hintText: "Email",
@@ -109,10 +124,44 @@ class _SignupPageState extends State<SignupPage> {
 
     final TextFormField passwordField = TextFormField(
       controller: passwordFieldController,
+      key: passwordFieldKey,
+      onChanged: (String? currentValue) => setState(() {
+        emailErrorText = null; 
+        passwordErrorText = null;
+      }),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (String? currentValue) {
+        List<String> specialCharacters = ["^", "\$", "*", ".", "[", "]", "{", "}", "(", ")", "?", '"', "!", "@", "#", "%", "&", "/", "\\", ",", ">", "<", "'", ":", ";", "|", "_", "~"];
+
+        if (currentValue == "") {
+          return "Please enter a password";
+        }
+        else if (currentValue!.length < 8) {
+          return "Password must be at least 8 characters";
+        }
+        else if (currentValue.length > 4096) {
+          return "Password must be shorter than 4096 characters";
+        }
+        else if (!RegExp(r'[a-z]').hasMatch(currentValue)) {
+          return "Password must contain a lowercase letter";
+        }
+        else if (!RegExp(r'[A-Z]').hasMatch(currentValue)) {
+          return "Password must contain an uppercae letter";
+        }
+        else if (!RegExp(r'[0-9]').hasMatch(currentValue)) {
+          return "Password must contain a digit";
+        }
+        else if (!specialCharacters.any((String specialCharacter) => currentValue.contains(specialCharacter))) {
+          return "Password must contain a special character";
+        }
+        else {
+          return null;
+        }
+      },
       obscureText: obscureText,
       decoration: InputDecoration(
-        helperText: "Password must contain 1 lowercase character, 1 uppercase character, 1 special character and 1 number",
-        helperMaxLines: 3,
+        helperText: "",
+        errorMaxLines: 3,
         border: OutlineInputBorder(),
         hintText: "Password",
         errorText: passwordErrorText,
@@ -135,7 +184,13 @@ class _SignupPageState extends State<SignupPage> {
     );
 
     final ElevatedButton signupButton = ElevatedButton(
-      onPressed: () => signup(emailFieldController.text, passwordFieldController.text),
+      onPressed: () async {
+        emailFieldKey.currentState!.validate();
+        passwordFieldKey.currentState!.validate();
+        if (emailFieldKey.currentState!.validate() && passwordFieldKey.currentState!.validate()) {
+          await signup(emailFieldController.text, passwordFieldController.text);
+        }      
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: ColorScheme.of(context).primary,
         foregroundColor: ColorScheme.of(context).surface,

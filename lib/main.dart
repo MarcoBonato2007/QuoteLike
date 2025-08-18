@@ -52,13 +52,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Have client-side email format check
-// for signup, have client-side password strength check (use FirebaseAuth.instance.validatePassword())
-// Use snackbars where it's sensible instead of error messsages
-// Auto validate for email and signup password
-
-// TODO: test a lot. What do you not like? what would you change?
-
 // TODO: add client-side debouncing (prevent login/signup/forgot password button spam)
 // Prevent verification and password reset email spam
 
@@ -67,3 +60,6 @@ class _MyHomePageState extends State<MyHomePage> {
 // TODO: make it all look good
 // TODO: ensure safety of api keys and such. Check nothing sensitive on github.
 // TODO: use appcheck to ensure no cracked clients and such
+// TODO: add network error check
+// TODO: tons and tons of testing. try getting every error possible.
+// TODO: make it from scratch on a diff firebase project, have only this on github
