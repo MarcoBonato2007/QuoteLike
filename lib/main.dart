@@ -52,9 +52,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// TODO: add signup page
-// TODO: add client-side email format verification (don't remove the handling from firebase invalid-email though)
-// TODO: prevent verification and password reset and signup email spam (for each user, check last time they sent it)
+// TODO: fully protect against enum attacks
+// TODO: test a lot. What do you not like? what would you change?
+
+// TODO: prevent login/signup and verification and password reset and signup email spam (for each user, check last time they sent it)
+// TODO: consider adding a captcha
 // TODO: Ensure all rate limit errors are handled (too-many-requests)
+// TODO: Add the quotes, searchbar, like feature, sort feature
 // TODO: make it all look good
-// TODO: Add the quotes, searchbar, like feature
+// TODO: ensure safety of api keys and such. Check nothing sensitive on github.
