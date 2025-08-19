@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
+import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
-import 'package:quotebook/login_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -14,116 +14,98 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage>{
-  String? emailErrorText; // put here so login() and build() can both access them
-  String? passwordErrorText;
-  bool obscureText = true;
-
+  String? emailErrorText; // put here so login() and build() can both access them\
   final emailFieldController = TextEditingController();
-  final passwordFieldKey = GlobalKey<FormFieldState>();
-  final passwordFieldController = TextEditingController();
   final emailFieldKey = GlobalKey<FormFieldState>();
 
+  String? passwordErrorText;
+  final passwordFieldKey = GlobalKey<FormFieldState>();
+  final passwordFieldController = TextEditingController();
+  bool obscurePassword = true;
+
+  String? passwordConfirmErrorText;
+  final passwordConfirmFieldKey = GlobalKey<FormFieldState>();
+  final passwordConfirmFieldController = TextEditingController();
+  bool obscurePasswordConfirm = true;
+
   Future<void> signup(String email, String password) async {
-    showDialog( // Show loading icon
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => const Center(child: CircularProgressIndicator())
-    );
+    final log = Logger("Signup function");
+    
+    showLoadingIcon(context);
 
     String? newEmailErrorText; // new error messages (can be null)
     String? newPasswordErrorText;
-    late final UserCredential newUserCredential;
+    String? newPasswordConfirmErrorText;
 
-    if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
-      newEmailErrorText = ""; // blank so it will just highlight red
-      newPasswordErrorText = "Network error. Check your internet connection.";
-    }
-    else {
-      try { // attempt sign up through firebase and handle relevent errors
-        newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password
-        );
-      }
-      on FirebaseAuthException catch (e) { // check error code and set appropriate error message
-        if (e.code == "invalid-email") {
-          newEmailErrorText = "Invalid email format";
-        }
-        else if (e.code == "weak-password" || e.code == "unknown" || e.code == "email-already-in-use") {
-          // We don't tell the user if an account already exists, this prevents an enumeration attack
-        }
-        else if (e.code == "too-many-requests") {
-          newEmailErrorText = ""; // blank so it will just highlight red
-          newPasswordErrorText = "Servers busy, try again later";
-        }
-        else if (e.code == "network-request-failed") {
-          newEmailErrorText = ""; // blank so it will just highlight red
-          newPasswordErrorText = "Network error. Check your internet connection.";
-        }
-        else {
-          newEmailErrorText = ""; // blank so it will just highlight red
-          newPasswordErrorText = "An unknown error occurred.";
-        }
-      }
-      catch (e) {
-        newEmailErrorText = ""; // blank so it will just highlight red
-        newPasswordErrorText = "An unknown error occurred.";        
-      }      
-    }
+    UserCredential? newUserCredential;
 
-
-    setState(() {
-      emailErrorText = newEmailErrorText;
-      passwordErrorText = newPasswordErrorText;
+    (newEmailErrorText, newPasswordErrorText) = await firebaseAuthErrorCatch(context, () async {
+      newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password
+      );
+      await FirebaseAuth.instance.signOut();
     });
 
-    if (mounted) {Navigator.of(context).pop();} // Remove loading icon
+    if (newEmailErrorText == HIGHLIGHT_RED) {
+      newPasswordConfirmErrorText = newPasswordErrorText;
+      newPasswordErrorText = HIGHLIGHT_RED;
+    }
 
-    // If no error messages, complete signup process
+    // If no error messages, then either signup successful or account already exists
     if (newEmailErrorText == null && newPasswordErrorText == null) {
-      // add a document for this user in the firestore database, containing:
-        // a collection that will contain id's of liked quotes
-        // a timestamp for the last time an email verification was sent to their inbox
-        // a timestamp for the last time a password reset was sent to their inbox
-      DocumentReference userDoc = FirebaseFirestore.instance.collection("users").doc(newUserCredential.user!.email);
-      Map<String, dynamic> userDocData = {
-        "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
-        "last_password_reset_email": DateTime(2000)
-      };
-      
-      await userDoc.get().then((DocumentSnapshot docSnapshot) async {
-        if (!docSnapshot.exists) { // the user could already exist (remember, we don't tell the user that)
-          await userDoc.set(userDocData);
-          await userDoc.collection("liked_quotes").doc("placeholder").set({});
+      // if a new user is being added (newUserCredential != null), add a new user document
+      if (newUserCredential != null) {
+        // add a document for this user in the firestore database
+        DocumentReference userDoc = FirebaseFirestore.instance.collection("users").doc(newUserCredential!.user!.email);
+        Map<String, dynamic> userDocData = {
+          "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
+          "last_password_reset_email": DateTime(2000)
+        };
+
+        await userDoc.get().then((DocumentSnapshot docSnapshot) async {
+          if (!docSnapshot.exists) { // the user could already exist (remember, we don't tell the user that)
+            await userDoc.set(userDocData);
+            await userDoc.collection("liked_quotes").doc("placeholder").set({});
+          }
+        }).catchError((error) {
+          log.severe("${log.name}: Unkown firestore error: $error");
+        }); 
+
+        if (mounted) { // send the user a verification email and set a new timestamp
+          await firebaseAuthErrorCatch(context, () async {
+            await newUserCredential!.user!.sendEmailVerification();
+            userDocData["last_verification_email"] = DateTime.timestamp();
+            await userDoc.set(userDocData).catchError((error) {
+              log.severe("${log.name}: Unkown firestore error: $error");
+            });          
+          });           
         }
-      });
-
-      String toastMessage = "Sign up successful (check your inbox for a verification email) or account already exists.";
-
-      try { // send verification email
-        await newUserCredential.user!.sendEmailVerification();
-        userDocData["last_verification_email"] = DateTime.now();
-        await userDoc.set(userDocData);
-      }
-      on FirebaseAuthException {
-        toastMessage = "Sign up successful (error sending verification email) or account already exists.";
-      }
-      catch (e) {
-        toastMessage = "Sign up successful (error sending verification email) or account already exists.";
       }
 
       // Go back to login screen and show success snackbar
       if (mounted) {
-        Navigator.push(
-          context, 
-          MaterialPageRoute(builder: (context) => Scaffold(body: LoginPage()))
-        );
+        Navigator.of(context).pop(); // go back to loginPage()
         showToast(
           context, 
-          toastMessage, 
+          "Sign up successful (check your inbox for a verification email) or account already exists.", 
           Duration(seconds: 3),
         );        
       }
+    }
+    else { // set error messages
+      setState(() {
+        emailErrorText = newEmailErrorText;
+        passwordErrorText = newPasswordErrorText;
+        passwordConfirmErrorText = newPasswordConfirmErrorText;
+      });
+      if (mounted) {
+        hideLoadingIcon(context);
+      }
+    }
+
+    if (mounted) {
+      hideLoadingIcon(context);
     }
   }
 
@@ -135,6 +117,7 @@ class _SignupPageState extends State<SignupPage>{
       onChanged: (String? currentValue) => setState(() {
         emailErrorText = null; 
         passwordErrorText = null;
+        passwordConfirmErrorText = null;
       }),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (String? currentValue) {
@@ -164,6 +147,7 @@ class _SignupPageState extends State<SignupPage>{
       onChanged: (String? currentValue) => setState(() {
         emailErrorText = null; 
         passwordErrorText = null;
+        passwordConfirmErrorText = null;
       }),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (String? currentValue) {
@@ -194,7 +178,7 @@ class _SignupPageState extends State<SignupPage>{
           return null;
         }
       },
-      obscureText: obscureText,
+      obscureText: obscurePassword,
       decoration: InputDecoration(
         helperText: "",
         errorMaxLines: 3,
@@ -212,21 +196,67 @@ class _SignupPageState extends State<SignupPage>{
                 color: passwordErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error
               ), 
             ),
-            icon: obscureText ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-            onPressed: () => setState(() => obscureText = !obscureText)
+            icon: obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
+            onPressed: () => setState(() => obscurePassword = !obscurePassword)
+          ),
+        ),
+      ),
+    );
+
+    final TextFormField passwordConfirmField = TextFormField(
+      controller: passwordConfirmFieldController,
+      key: passwordConfirmFieldKey,
+      onChanged: (String? currentValue) => setState(() {
+        emailErrorText = null; 
+        passwordErrorText = null;
+        passwordConfirmErrorText = null;
+      }),
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (String? currentValue) {
+        if (currentValue == "") {
+          return "Please enter a password confirmation";
+        }
+        else if (currentValue != passwordFieldController.text) {
+          return "Passwords must match";
+        }
+        else {
+          return null;
+        }
+      },
+      obscureText: obscurePasswordConfirm,
+      decoration: InputDecoration(
+        helperText: "",
+        errorMaxLines: 3,
+        border: OutlineInputBorder(),
+        hintText: "Password",
+        errorText: passwordConfirmErrorText,
+        prefixIcon: Icon(Icons.lock),
+        suffixIcon: Padding(
+          padding: const EdgeInsets.all(5),
+          child: IconButton.outlined(
+            color: passwordConfirmErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error, // ColorScheme.of(context).onSurfaceVariant
+            style: IconButton.styleFrom(
+              side: BorderSide(
+                width: 2.0, 
+                color: passwordConfirmErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error
+              ), 
+            ),
+            icon: obscurePasswordConfirm ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
+            onPressed: () => setState(() => obscurePasswordConfirm = !obscurePasswordConfirm)
           ),
         ),
       ),
     );
 
     final ElevatedButton signupButton = ElevatedButton(
-      onPressed: () async {
-        emailFieldKey.currentState!.validate();
-        passwordFieldKey.currentState!.validate();
-        if (emailFieldKey.currentState!.validate() && passwordFieldKey.currentState!.validate()) {
+      onPressed: () => throttledFunc(2000, () async {
+        bool emailValid = emailFieldKey.currentState!.validate();
+        bool passwordValid = passwordFieldKey.currentState!.validate();
+        bool passwordConfirmValid = passwordConfirmFieldKey.currentState!.validate();
+        if (emailValid && passwordValid && passwordConfirmValid) {
           await signup(emailFieldController.text, passwordFieldController.text);
         }      
-      },
+      }),
       style: ElevatedButton.styleFrom(
         backgroundColor: ColorScheme.of(context).primary,
         foregroundColor: ColorScheme.of(context).surface,
@@ -242,10 +272,7 @@ class _SignupPageState extends State<SignupPage>{
         tapTargetSize: MaterialTapTargetSize.shrinkWrap
       ),
       child: Text("Login"),
-      onPressed: () => Navigator.push(
-        context, 
-        MaterialPageRoute(builder: (context) => Scaffold(body: LoginPage()))
-      )
+      onPressed: () => Navigator.of(context).pop()
     );
 
     return Padding(
@@ -258,6 +285,8 @@ class _SignupPageState extends State<SignupPage>{
           emailField,
           SizedBox(height: 5),
           passwordField,
+          SizedBox(height: 5),
+          passwordConfirmField,
           SizedBox(height: 10),
           SizedBox(
             width: MediaQuery.of(context).size.width,
@@ -267,7 +296,7 @@ class _SignupPageState extends State<SignupPage>{
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("Already have an account? "),
+              Text("Already have an account?"),
               loginButton
             ]
           )
