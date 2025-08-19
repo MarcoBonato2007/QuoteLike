@@ -1,0 +1,1 @@
+// on delete user, make sure to delete their document entry in the firestore

@@ -37,8 +37,8 @@ dependencies:
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.1
   cloud_firestore: ^6.0.0
-  email_validator: ^3.0.0
-  connectivity_plus: ^6.1.5
+  email_validator: ^3.0.0 # Used to validate email addresses on signup/login screen
+  connectivity_plus: ^6.1.5 # Used to check if user is connected to internet
 
 dev_dependencies:
   flutter_test:
