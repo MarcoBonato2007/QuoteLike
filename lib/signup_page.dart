@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,7 +13,7 @@ class SignupPage extends StatefulWidget {
   State<SignupPage> createState() => _SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage> {
+class _SignupPageState extends State<SignupPage>{
   String? emailErrorText; // put here so login() and build() can both access them
   String? passwordErrorText;
   bool obscureText = true;
@@ -31,6 +32,7 @@ class _SignupPageState extends State<SignupPage> {
 
     String? newEmailErrorText; // new error messages (can be null)
     String? newPasswordErrorText;
+    late final UserCredential newUserCredential;
 
     if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
       newEmailErrorText = ""; // blank so it will just highlight red
@@ -38,7 +40,7 @@ class _SignupPageState extends State<SignupPage> {
     }
     else {
       try { // attempt sign up through firebase and handle relevent errors
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password
         );
@@ -57,10 +59,6 @@ class _SignupPageState extends State<SignupPage> {
         else if (e.code == "network-request-failed") {
           newEmailErrorText = ""; // blank so it will just highlight red
           newPasswordErrorText = "Network error. Check your internet connection.";
-        }
-        else if (e.code == "channel-error") { // email or password is blank
-          newEmailErrorText = (email == "") ? "Please enter an email" : null;
-          newPasswordErrorText = (password == "") ? "Please enter a password" : null;
         }
         else {
           newEmailErrorText = ""; // blank so it will just highlight red
@@ -81,13 +79,51 @@ class _SignupPageState extends State<SignupPage> {
 
     if (mounted) {Navigator.of(context).pop();} // Remove loading icon
 
-    // If no error messages, go back to login page, show success snackbar
-    if (newEmailErrorText == null && newPasswordErrorText == null && mounted) {
-      Navigator.push(
-        context, 
-        MaterialPageRoute(builder: (context) => Scaffold(body: LoginPage()))
-      );
-      showToast(context, "Sign up successful or account already exists");
+    // If no error messages, complete signup process
+    if (newEmailErrorText == null && newPasswordErrorText == null) {
+      // add a document for this user in the firestore database, containing:
+        // a collection that will contain id's of liked quotes
+        // a timestamp for the last time an email verification was sent to their inbox
+        // a timestamp for the last time a password reset was sent to their inbox
+      DocumentReference userDoc = FirebaseFirestore.instance.collection("users").doc(newUserCredential.user!.email);
+      Map<String, dynamic> userDocData = {
+        "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
+        "last_password_reset_email": DateTime(2000)
+      };
+      
+      await userDoc.get().then((DocumentSnapshot docSnapshot) async {
+        if (!docSnapshot.exists) { // the user could already exist (remember, we don't tell the user that)
+          await userDoc.set(userDocData);
+          await userDoc.collection("liked_quotes").doc("placeholder").set({});
+        }
+      });
+
+      String toastMessage = "Sign up successful (check your inbox for a verification email) or account already exists.";
+
+      try { // send verification email
+        await newUserCredential.user!.sendEmailVerification();
+        userDocData["last_verification_email"] = DateTime.now();
+        await userDoc.set(userDocData);
+      }
+      on FirebaseAuthException {
+        toastMessage = "Sign up successful (error sending verification email) or account already exists.";
+      }
+      catch (e) {
+        toastMessage = "Sign up successful (error sending verification email) or account already exists.";
+      }
+
+      // Go back to login screen and show success snackbar
+      if (mounted) {
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context) => Scaffold(body: LoginPage()))
+        );
+        showToast(
+          context, 
+          toastMessage, 
+          Duration(seconds: 3),
+        );        
+      }
     }
   }
 

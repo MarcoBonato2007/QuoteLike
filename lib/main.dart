@@ -53,13 +53,22 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // TODO: add client-side debouncing (prevent login/signup/forgot password button spam)
-// Prevent verification and password reset email spam
+  // Throttle or debounce? 
+  // Try making the throttler/debouncer yourself
+  // Add 1 second debounce/throttle time to everything (i.e. max one click / second)
+  // Experiment with what times feel good. Then implement a slightly shorter time.
+  // add a password confirm box
+// TODO: try to spot and make any final touches. TEST A LOT!!
+  // Make it so that two-line error text doesn't move the things.
 
-// TODO: consider adding a captcha
-// TODO: Add the quotes, searchbar, like feature, sort feature
-// TODO: make it all look good
-// TODO: ensure safety of api keys and such. Check nothing sensitive on github.
-// TODO: use appcheck to ensure no cracked clients and such
-// TODO: add network error check
-// TODO: tons and tons of testing. try getting every error possible.
-// TODO: make it from scratch on a diff firebase project, have only this on github
+// Future todo's:
+// consider adding a captcha
+// Add the quotes, searchbar, like feature, sort feature
+// make it all look good
+// ensure safety of api keys and such. Check nothing sensitive on github.
+// use appcheck to ensure no cracked clients and such
+// add network error check
+// code cleanup, make it better, try finding built-in alternatives to things
+// tons and tons of testing. try getting every error possible.
+// research and make good firebase security rules
+// make it from scratch on a diff firebase project, have only this on github
