@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:quotebook/login_page.dart';
 import 'firebase_options.dart';
 
@@ -9,12 +10,17 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  Logger.root.level = Level.ALL; // defaults to Level.INFO
+  Logger.root.onRecord.listen((record) {
+    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+  });
   
   FirebaseAuth.instance // https://firebase.google.com/docs/auth/flutter/start
     .authStateChanges()
     .listen((User? user) {
-      if (user == null) {print("Nobody logged in");}
-      else {print("${user.uid} logged in");}
+      if (user == null) {debugPrint("Nobody logged in");}
+      else {debugPrint("${user.uid} logged in");}
   });
 
   runApp(const MyApp());
@@ -52,23 +58,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// TODO: add client-side debouncing (prevent login/signup/forgot password button spam)
-  // Throttle or debounce? 
-  // Try making the throttler/debouncer yourself
-  // Add 1 second debounce/throttle time to everything (i.e. max one click / second)
-  // Experiment with what times feel good. Then implement a slightly shorter time.
-  // add a password confirm box
-// TODO: try to spot and make any final touches. TEST A LOT!!
-  // Make it so that two-line error text doesn't move the things.
+// Next in line
+  // Make sure users only access explore page when logged in.
+  // Have logged in status persist (check credentials?)
+  // note that both on login() and signup(), user goes logged in and then out quickly
+    // so how do i see if they REMAIN logged in?
+  // Add the quotes, searchbar, like feature, sort feature
 
-// Future todo's:
-// consider adding a captcha
-// Add the quotes, searchbar, like feature, sort feature
-// make it all look good
-// ensure safety of api keys and such. Check nothing sensitive on github.
-// use appcheck to ensure no cracked clients and such
-// add network error check
-// code cleanup, make it better, try finding built-in alternatives to things
-// tons and tons of testing. try getting every error possible.
-// research and make good firebase security rules
-// make it from scratch on a diff firebase project, have only this on github
+// Polish
+  // make it all look good
+  // ensure safety of api keys and such. Check nothing sensitive on github.
+  // use appcheck to ensure no cracked clients and such
+  // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
+  // lots of code cleanup, make it better, try finding built-in alternatives to things
+  // tons and tons of testing. try getting every error possible.
+  // research and make good firebase security rules
+  // make it from scratch on a diff firebase project, have only this on github
