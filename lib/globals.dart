@@ -79,9 +79,9 @@ Future<(String?, String?)> firebaseAuthErrorCatch(BuildContext context, Function
 }
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
-void throttledFunc(int throttleTimeMs, Function() func) { // only allow action once every second at most
+void throttledFunc(int throttleTimeMs, Function() func) async { // only allow action once every second at most
   if (DateTime.timestamp().difference(lastAction).inMilliseconds >= throttleTimeMs) {
-    func();
+    await func();
     lastAction = DateTime.timestamp();
   }
 }

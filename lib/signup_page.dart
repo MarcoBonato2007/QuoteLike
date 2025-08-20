@@ -44,7 +44,6 @@ class _SignupPageState extends State<SignupPage>{
         email: email,
         password: password
       );
-      await FirebaseAuth.instance.signOut();
     });
 
     if (newEmailErrorText == HIGHLIGHT_RED) {
@@ -75,6 +74,7 @@ class _SignupPageState extends State<SignupPage>{
         if (mounted) { // send the user a verification email and set a new timestamp
           await firebaseAuthErrorCatch(context, () async {
             await newUserCredential!.user!.sendEmailVerification();
+            await FirebaseAuth.instance.signOut();
             userDocData["last_verification_email"] = DateTime.timestamp();
             await userDoc.set(userDocData).catchError((error) {
               log.severe("${log.name}: Unkown firestore error: $error");
