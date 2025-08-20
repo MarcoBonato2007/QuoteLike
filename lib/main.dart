@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/login_page.dart';
+import 'package:quotebook/main_page.dart';
 import 'firebase_options.dart';
 
 // com.bonato.quotebook
@@ -11,16 +12,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  Logger.root.level = Level.ALL; // defaults to Level.INFO
+  Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
+    // Level is INFO for caught errors, WARNING for unknown auth caught errors, SEVERE for unknown firestore errors
     debugPrint('${record.level.name}: ${record.time}: ${record.message}');
   });
-  
+
   FirebaseAuth.instance // https://firebase.google.com/docs/auth/flutter/start
     .authStateChanges()
     .listen((User? user) {
-      if (user == null) {debugPrint("Nobody logged in");}
-      else {debugPrint("${user.uid} logged in");}
+      if (user == null) {
+        debugPrint("Nobody logged in");
+      }
+      else if (!user.emailVerified) {
+        debugPrint("${user.uid} logged in, unverified");
+      }
+      else {
+        debugPrint("${user.uid} logged in, verified");
+      }
   });
 
   runApp(const MyApp());
@@ -52,8 +61,19 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: LoginPage()
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }  
+        if (snapshot.hasData && snapshot.data!.emailVerified == true) { // go to main page
+          return MainPage();
+        }
+        else {
+          return Scaffold(body: LoginPage());
+        }
+      }
     );
   }
 }
@@ -71,6 +91,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // use appcheck to ensure no cracked clients and such
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // tons and tons of testing. try getting every error possible.
+  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
+  // Don't just .catchError(), actually affect the error messages
+  // do network checks (while ur in quote)
   // research and make good firebase security rules
   // make it from scratch on a diff firebase project, have only this on github
