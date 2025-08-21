@@ -3,6 +3,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
 import 'package:quotebook/signup_page.dart';
 
@@ -14,124 +15,158 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage>{
-  String? emailErrorText; // put here so login() and build() can both access them
+  ErrorCode? emailError; // put here so login() and build() can both access them
   final emailFieldController = TextEditingController();
   final emailFieldKey = GlobalKey<FormFieldState>();
 
-  String? passwordErrorText;
+  ErrorCode? passwordError;
   final passwordFieldController = TextEditingController();
   final passwordFieldKey = GlobalKey<FormFieldState>();
 
   bool obscurePassword = true;
 
+  /// Attempts to send user a password reset email, shows any relevant errors.
+  /// 
+  /// Some errors are not shown, to prevent an email enumeration attack.
   Future<void> forgotPassword(String email) async {
     final log = Logger("Forgot password function");
 
     showLoadingIcon(context);
 
-    String? newEmailErrorText;
-    String? newPasswordErrorText;
+    ErrorCode? newEmailError;
+    ErrorCode? newPasswordError;
 
-    // Get user doc, check it exists, and send email if an hour has passed since the last password reset
+    // Get user doc, check it exists, and send email if at least an hour has passed since the last password reset
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
     await userDocRef.get().then((DocumentSnapshot userDoc) async {
-      if (userDoc.exists) { // we only do anything if the user's email exists
+      if (userDoc.exists) { // we only do anything if the given email actually exists
         Map<String, dynamic> userDocData = (await userDocRef.get()).data() as Map<String, dynamic>;
-        int minutesSinceLasPasswordResetEmail = DateTime.timestamp().difference(userDocData["last_password_reset_email"].toDate()).inMinutes;
-        if (minutesSinceLasPasswordResetEmail >= 60 && mounted) {
-          (newEmailErrorText, newPasswordErrorText) = await firebaseAuthErrorCatch(context, () async {
+        int minutesSinceLastPasswordResetEmail = DateTime.timestamp().difference(userDocData["last_password_reset_email"].toDate()).inMinutes;
+        if (minutesSinceLastPasswordResetEmail >= 60 && mounted) {
+          // attempt to send the password reset email, get any error messages
+          ErrorCode? error = await firebaseAuthErrorCatch(() async {
             await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
             userDocData["last_password_reset_email"] = DateTime.timestamp();
             await userDocRef.set(userDocData);
           });   
+          (newEmailError, newPasswordError) = errorsForFields(error);
         }
       }
-
-      if (newEmailErrorText == null && newPasswordErrorText == null && mounted) { // no errors occurred, show success toast
-        showToast(
-          context, 
-          "If this account exists, and a password reset didn't take place within the last hour, then a password reset email has been sent.",
-          Duration(seconds: 5),
-        );
-      }
-      else { // errors occurred, update error texts
-        setState(() {
-          emailErrorText = newEmailErrorText;
-          passwordErrorText = newPasswordErrorText;
-        });
-      }
-    }).catchError((error) {
-      log.severe("${log.name}: Unknown firestore error: $error");
+    }).catchError((firestoreError) {
+      (newEmailError, newPasswordError) = errorsForFields(ErrorCodes.UNKNOWN_ERROR);
+      log.severe("${log.name}: Unknown firestore error: $firestoreError");
     }); // catch any errors (ignored for now)
+
+    // if no errors occurred, show success toast
+    if (newEmailError == null && newPasswordError == null && mounted) {
+      showToast(
+        context, 
+        "If this account exists, and a password reset didn't take place within the last hour, then a password reset email has been sent.",
+        Duration(seconds: 5),
+      );
+    }
+
+    setState(() { // update error texts
+      emailError = newEmailError;
+      passwordError = newPasswordError;
+    });
 
     if (mounted) {
       hideLoadingIcon(context);
     }
   }
 
-  Future<void> login(String email, String password) async {
-    final log = Logger("Login function");
+  /// Attempts to send a user a verification email (if one has not been sent too recently.)
+  Future<ErrorCode?> sendEmailVerification(User user) async {
+    final log = Logger("Sending email verification");
 
+    ErrorCode? error;
+
+    // get the user doc
+    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(user.email);
+    late final Map<String, dynamic> userDocData;
+    await userDocRef.get().then((DocumentSnapshot userDocSnapshot) async {
+      userDocData = userDocSnapshot.data() as Map<String, dynamic>;
+    }).catchError((firestoreError) {
+      error = ErrorCodes.UNKNOWN_ERROR;
+      log.severe("${log.name}: Unkown firestore error: $firestoreError");
+    });
+    if (error != null) { // we always return the FIRST error encountered
+      return error;
+    }
+
+    // check if another verification email has been sent recently (< 3 days is too recent)
+    // if a verification email was not sent recently, a new one will be sent
+    int hoursSinceLastVerificationEmail = DateTime.timestamp().difference(userDocData["last_verification_email"].toDate()).inHours;
+    if (hoursSinceLastVerificationEmail <= 72 && mounted) {
+      error = ErrorCodes.VERIFICATION_EMAIL_SENT_RECENTLY;         
+    }
+    else {
+      // send email verification
+      error = await firebaseAuthErrorCatch(() async {
+        await FirebaseAuth.instance.currentUser!.sendEmailVerification();      
+      });
+      if (error != null) { // we always return the FIRST error encountered
+        return error;
+      }
+
+      // set new email timestamp
+      userDocData["last_verification_email"] = DateTime.timestamp();
+      await userDocRef.set(userDocData).catchError((firestoreError) {
+        error = ErrorCodes.UNKNOWN_ERROR;
+        log.severe("${log.name}: Unkown firestore error: $firestoreError");
+      });                
+    }
+
+    return error;
+  }
+
+  /// Attempts to sign a user in with the given credentials, shows any relevant errors
+  /// 
+  /// If user successfully logs in but is not verified, then a verification email is sent
+  /// if another wasn't sent too recently.
+  Future<void> login(String email, String password) async {
     showLoadingIcon(context);
 
-    String? newEmailErrorText; // new error messages (can be null)
-    String? newPasswordErrorText;
+    ErrorCode? newEmailError; // new error messages (can be null)
+    ErrorCode? newPasswordError;
 
-    (newEmailErrorText, newPasswordErrorText) = await firebaseAuthErrorCatch(context, () async {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password
-      );
-    });
+    // Attempt to log the user in
+    (newEmailError, newPasswordError) = errorsForFields(
+      await firebaseAuthErrorCatch(() async {
+        await FirebaseAuth.instance.signOut();
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password
+        );
+      })
+    );
 
-    // if login successful, and email not verified, then send verification email (if not too recent), show error message and sign out
-    if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-      newEmailErrorText = "Email not verified.";
+    // if login successful, but email not verified, then send verification email (if not too recent), show any error message and sign out
+    if (newEmailError == null && newPasswordError == null && !FirebaseAuth.instance.currentUser!.emailVerified) {
+      // this error will be displayed using a snackbar, NOT a form errorText as usual
+      ErrorCode? error = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
+      newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
 
-      // check if another verification email has been sent recently, limit of 1 email/user/3 days
-      DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
-      await userDocRef.get().then((DocumentSnapshot userDocSnapshot) async {
-        Map<String, dynamic> userDocData = userDocSnapshot.data() as Map<String, dynamic>;
-
-        if (DateTime.timestamp().difference(userDocData["last_verification_email"].toDate()).inHours <= 72 && mounted) {
-          showToast( // tell user to check their inbox if a verification email was sent recently
-            context, 
-            "A verification email was already sent recently. Check your inbox.",
-            Duration(seconds: 3)
-          );              
-        }
-        else if (mounted) { // send a new verification email, set new timestamp
-          await firebaseAuthErrorCatch(
-            isEmailVerificationSend: true,
-            context, 
-            () async {
-              await FirebaseAuth.instance.currentUser!.sendEmailVerification();
-
-              userDocData["last_verification_email"] = DateTime.timestamp();
-              await userDocRef.set(userDocData).catchError((error) {
-                log.severe("${log.name}: Unkown firestore error: $error");
-              });
-
-              if (mounted) {
-                showToast(
-                  context, 
-                  "A new verification email has been sent. Check your inbox.",
-                  Duration(seconds: 3)
-                );                
-              }              
-            },
-          );
-        }
-      }).catchError((error) {
-        log.severe("${log.name}: Unkown firestore error: $error");
-      }); // catch any errors (ignored for now)
-
-      await FirebaseAuth.instance.signOut(); // sign out, since they are not verified
+      if (error != null && mounted) {
+        showToast(
+          context,
+          ErrorCodes.NO_VERIFICATION_EMAIL.errorText + error.errorText, 
+          Duration(seconds: 3)
+        );       
+      }
+      else if (mounted) {
+        showToast(
+          context, 
+          "A new verification email has been sent. Check your inbox.",
+          Duration(seconds: 3)
+        );   
+      }
     }
 
     setState(() {
-      emailErrorText = newEmailErrorText;
-      passwordErrorText = newPasswordErrorText;
+      emailError = newEmailError;
+      passwordError = newPasswordError;
     });
 
     if (mounted) {
@@ -141,15 +176,17 @@ class _LoginPageState extends State<LoginPage>{
 
   @override
   Widget build(BuildContext context) {
-    final TextFormField emailField = TextFormField(
-      controller: emailFieldController,
-      key: emailFieldKey,
-      onChanged: (String? currentValue) => setState(() {
-        emailErrorText = null; 
-        passwordErrorText = null;
+    final TextFormField emailField = textFormField(
+      emailFieldController, 
+      emailFieldKey,
+      "Email",
+      emailError,
+      Icon(Icons.email),
+      (String? currentValue) => setState(() {
+        emailError = null; 
+        passwordError = null;
       }),
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      validator: (String? currentValue) {
+      (String? currentValue) {
         if (currentValue == "") {
           return "Please enter an email";
         }
@@ -160,25 +197,19 @@ class _LoginPageState extends State<LoginPage>{
           return null;
         }
       },
-      decoration: InputDecoration(
-        helperText: "", // Ensures error text space is always taken up
-        errorMaxLines: 3,
-        prefixIcon: Icon(Icons.email),
-        border: OutlineInputBorder(),
-        hintText: "Email",
-        errorText: emailErrorText
-      ),
     );
 
-    final TextFormField passwordField = TextFormField(
-      controller: passwordFieldController,
-      key: passwordFieldKey,
-      onChanged: (String? currentValue) => setState(() {
-        emailErrorText = null; 
-        passwordErrorText = null;
+    final TextFormField passwordField = textFormField(
+      passwordFieldController,
+      passwordFieldKey,
+      "Password",
+      passwordError,
+      Icon(Icons.lock),
+      (String? currentValue) => setState(() {
+        emailError = null; 
+        passwordError = null;
       }),
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      validator: (String? currentValue) {
+      (String? currentValue) {
         if (currentValue == "") {
           return "Please enter a password";
         }
@@ -187,70 +218,51 @@ class _LoginPageState extends State<LoginPage>{
         }
       },
       obscureText: obscurePassword,
-      decoration: InputDecoration(
-        errorMaxLines: 3,
-        border: OutlineInputBorder(),
-        hintText: "Password",
-        errorText: passwordErrorText,
-        prefixIcon: Icon(Icons.lock),
-        counter: TextButton(
-          style: TextButton.styleFrom(
-            minimumSize: Size.zero, 
-            padding: EdgeInsetsGeometry.only(left: 6, right: 6),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap
+      counter: textButton(
+        context,
+        "Forgot password?",
+        () => throttledFunc(2000, () async {
+          setState(() {
+            emailError = null;
+            passwordError = null;
+          });
+          if (emailFieldKey.currentState!.validate()) {
+            await forgotPassword(emailFieldController.text);
+          }
+        })
+      ),
+      suffixIcon: Padding(
+        padding: const EdgeInsets.all(5),
+        child: IconButton.outlined(
+          color: ColorScheme.of(context).primary,
+          style: IconButton.styleFrom(
+            side: BorderSide(
+              width: 2.0, 
+              color: ColorScheme.of(context).primary,
+            ), 
           ),
-          child: Text("Forgot password?"),
-          onPressed: () => throttledFunc(2000, () async {
-            setState(() {
-              emailErrorText = null;
-              passwordErrorText = null;
-            });
-            if (emailFieldKey.currentState!.validate()) {
-              await forgotPassword(emailFieldController.text);
-            }
-          })
-        ),
-        suffixIcon: Padding(
-          padding: const EdgeInsets.all(5),
-          child: IconButton.outlined(
-            color: passwordErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error, // ColorScheme.of(context).onSurfaceVariant
-            style: IconButton.styleFrom(
-              side: BorderSide(
-                width: 2.0, 
-                color: passwordErrorText == null ? ColorScheme.of(context).primary : ColorScheme.of(context).error
-              ), 
-            ),
-            icon: obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-            onPressed: () => setState(() => obscurePassword = !obscurePassword)
-          ),
+          icon: obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
+          onPressed: () => setState(() => obscurePassword = !obscurePassword)
         ),
       ),
     );
 
-    final ElevatedButton loginButton = ElevatedButton(
-      onPressed: () => throttledFunc(2000, () async {
+    final ElevatedButton loginButton = elevatedButton(
+      context, 
+      "Login",
+      () => throttledFunc(2000, () async {
         bool emailValid = emailFieldKey.currentState!.validate();
         bool passwordValid = passwordFieldKey.currentState!.validate();
         if (emailValid && passwordValid) {
           await login(emailFieldController.text, passwordFieldController.text);
         }  
-      }),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: ColorScheme.of(context).primary,
-        foregroundColor: ColorScheme.of(context).surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10))  
-      ),
-      child: Text("Login")
+      })
     );
 
-    final TextButton signupButton = TextButton(
-      style: TextButton.styleFrom(
-        minimumSize: Size.zero, 
-        padding: EdgeInsetsGeometry.only(left: 6, right: 6),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap
-      ),
-      child: Text("Sign up"),
-      onPressed: () => Navigator.push(
+    final TextButton signupButton = textButton(
+      context, 
+      "Sign up",
+      () => Navigator.push(
         context, 
         MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
       )
