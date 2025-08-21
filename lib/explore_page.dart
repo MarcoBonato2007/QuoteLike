@@ -16,12 +16,13 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
-  Widget dropdownButton( // used for filter and sort buttons
+  /// Widget used for the filter and sort buttons of the explore page
+  Widget dropdownButton(
     BuildContext context,
     List<Map<String, String>> options,
     String hintText,
     Icon icon,
-    {double? widthOverride}
+    double width
   ) {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
       elevation: 2,
@@ -45,15 +46,10 @@ class _ExplorePageState extends State<ExplorePage> {
       }).toList()
     );
 
-    if (widthOverride == null) {
-      return IntrinsicWidth(child: mainWidget);
-    }
-    else {
-      return SizedBox(width: widthOverride, child: mainWidget);
-    }
-
+    return SizedBox(width: width, child: mainWidget);
   }
 
+  /// Creates a quote card, displaying an individual quote
   Widget quoteCard(String quote, String author) {
     Card mainCard = Card(
       // TODO: Needs lots of formatting to make it look good
@@ -99,8 +95,8 @@ class _ExplorePageState extends State<ExplorePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
           children: [
-            dropdownButton(context, filterOptions, "Filter", Icon(Icons.filter_list), widthOverride: 155),
-            dropdownButton(context, sortOptions, "Sort", Icon(Icons.sort), widthOverride: 155),
+            dropdownButton(context, filterOptions, "Filter", Icon(Icons.filter_list), 155),
+            dropdownButton(context, sortOptions, "Sort", Icon(Icons.sort), 155),
           ]
         ),
         SizedBox(height: 15),

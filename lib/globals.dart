@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
 
+/// Shows a non user dismissable CircularProgressIndicator() overlay
 void showLoadingIcon(BuildContext context) {
   showDialog(
     context: context,
@@ -12,73 +13,134 @@ void showLoadingIcon(BuildContext context) {
   );
 }
 
+/// Same as Navigator.of(context).pop(), used with showLoadingIcon()
 void hideLoadingIcon(BuildContext context) => Navigator.of(context).pop();
 
-// try excepts a firebase auth function, returns any password and email error messages
-Future<(String?, String?)> firebaseAuthErrorCatch(BuildContext context, Function() func, {bool isEmailVerificationSend = false}) async {
+/// standardizes the style of ElevatedButtons used in this project.
+ElevatedButton elevatedButton(BuildContext context, String text, Function() onPressed) {
+  return ElevatedButton(
+    onPressed: onPressed,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: ColorScheme.of(context).primary,
+      foregroundColor: ColorScheme.of(context).surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10))  
+    ),
+    child: Text(text)
+  );
+}
+
+/// standardizes the style of TextFormFields used in this project
+TextFormField textFormField(
+  TextEditingController controller,
+  GlobalKey<FormFieldState> key,
+  String hintText,
+  ErrorCode? error,
+  Icon prefixIcon,
+  Function(String? inputtedValue) onChanged,
+  String? Function(String?) validator,
+  {
+    bool obscureText = false,
+    Widget? counter,
+    Widget? suffixIcon
+  }
+) {
+  return TextFormField(
+    controller: controller,
+    key: key,
+    onChanged: onChanged,
+    autovalidateMode: AutovalidateMode.onUserInteraction,
+    validator: validator,
+    obscureText: obscureText,
+    decoration: InputDecoration(
+      helperText: "",
+      errorMaxLines: 3,
+      border: OutlineInputBorder(),
+      hintText: hintText,
+      errorText: error?.errorText,
+      prefixIcon: prefixIcon,
+      counter: counter,
+      suffixIcon: suffixIcon
+    ),
+  );
+}
+
+/// standardizes the style of TextButtons used in this project
+TextButton textButton(BuildContext context, String text, Function() onPressed) {
+  return TextButton(
+    style: TextButton.styleFrom(
+      minimumSize: Size.zero, 
+      padding: EdgeInsetsGeometry.only(left: 6, right: 6),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap
+    ),
+    onPressed: onPressed,
+    child: Text(text)
+  );
+}
+
+/// try excepts a firebase auth function, returns an error message (see constants.dart)
+Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
   final log = Logger("Firebase auth error catch");
-  String? newEmailErrorText;
-  String? newPasswordErrorText;
+  ErrorCode? error;
 
   // first check for internet connection.
   if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
-    newEmailErrorText = HIGHLIGHT_RED;
-    newPasswordErrorText = NETWORK_ERROR;
+    error = ErrorCodes.NETWORK_ERROR;
   }
   try { // next, run the function.
     await func();
   }
   on FirebaseAuthException catch (e, stackTrace) { // handle possible errors
-    if (e.code == "invalid-email" || e.code == "channel-error") {
+    if (e.code == "invalid-email" || e.code == "channel-error") { // channel-error means empty input of some kind
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      newEmailErrorText = INVALID_EMAIL;
+      error = ErrorCodes.INVALID_EMAIL;
     }
     else if (e.code == "email-already-in-use") { // for signing up
+      error = ErrorCodes.EMAIL_ALREADY_IN_USE;
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      // We don't tell the user the email is already in use (we pretend no error).
-      // This prevents an email enumeration attack.
+      // Ignore (prevents email enumeration attack)
     }
     else if (e.code == "too-many-requests") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      newEmailErrorText = HIGHLIGHT_RED;
-      newPasswordErrorText = SERVERS_BUSY;
+      error = ErrorCodes.SERVERS_BUSY;
     }
     else if (e.code == "user-not-found" || e.code == "wrong-password" || e.code == "invalid-credential") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      newEmailErrorText = HIGHLIGHT_RED; // blank so it will just highlight red
-      newPasswordErrorText = INCORRECT_CREDENTIALS;
+      error = ErrorCodes.INCORRECT_CREDENTIALS;
     }
     else if (e.code == "network-request-failed") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      newEmailErrorText = HIGHLIGHT_RED;
-      newPasswordErrorText = NETWORK_ERROR;
+      error = ErrorCodes.NETWORK_ERROR;
     }
     else {
       log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
-      newEmailErrorText = HIGHLIGHT_RED;
-      newPasswordErrorText = UNKNOWN_ERROR;
+      error = ErrorCodes.UNKNOWN_ERROR;
     }
   }
   catch (e, stackTrace) { // catch any non-firebase errors
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
-    newEmailErrorText = HIGHLIGHT_RED;
-    newPasswordErrorText = UNKNOWN_ERROR;
+    error = ErrorCodes.UNKNOWN_ERROR;
   }
 
-  if (isEmailVerificationSend && newPasswordErrorText != null && context.mounted) {
-    // If an email verification message was sent and there's an error, use a toast message instead
-    // This is because the error text is "Email not verified", and extra messages are shown through toast
-    showToast(
-      context,
-      NO_VERIFICATION_EMAIL + newPasswordErrorText, 
-      Duration(seconds: 3)
-    );       
+  return error;
+}
+
+/// convert an error from firebaseAuthErrorCatch() into errors for an email and password field
+(ErrorCode?, ErrorCode?) errorsForFields(ErrorCode? error) {
+  ErrorCode? emailError, passwordError;
+  
+  if (error == ErrorCodes.INVALID_EMAIL || error == ErrorCodes.EMAIL_NOT_VERIFIED) {
+    emailError = error;
+  }
+  else if (error != null && error != ErrorCodes.EMAIL_ALREADY_IN_USE) {
+    emailError = ErrorCodes.HIGHLIGHT_RED;
+    passwordError = error;
   }
 
-  return (newEmailErrorText, newPasswordErrorText);
+  return (emailError, passwordError);
 }
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
+/// Create a function that can only be called throttleTimeMs milliseconds from the last time it was called
 void throttledFunc(int throttleTimeMs, Function() func) async { // only allow action once every second at most
   if (DateTime.timestamp().difference(lastAction).inMilliseconds >= throttleTimeMs) {
     await func();
@@ -86,6 +148,7 @@ void throttledFunc(int throttleTimeMs, Function() func) async { // only allow ac
   }
 }
 
+/// Shows a popup message on the bottom of the screen
 void showToast(BuildContext context, String message, Duration duration) {
   ScaffoldMessenger.of(context).removeCurrentSnackBar();
   ScaffoldMessenger.of(context).clearSnackBars();

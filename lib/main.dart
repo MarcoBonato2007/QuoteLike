@@ -12,12 +12,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Setup error logging
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     // Level is INFO for caught errors, WARNING for unknown auth caught errors, SEVERE for unknown firestore errors
     debugPrint('${record.level.name}: ${record.time}: ${record.message}');
   });
 
+  // Get messages of user changes in the debug console
   FirebaseAuth.instance // https://firebase.google.com/docs/auth/flutter/start
     .authStateChanges()
     .listen((User? user) {
@@ -79,20 +81,23 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line
-  // Make sure users only access explore page when logged in.
-  // Have logged in status persist (check credentials?)
-  // note that both on login() and signup(), user goes logged in and then out quickly
-    // so how do i see if they REMAIN logged in?
+  // finish settings page
   // Add the quotes, searchbar, like feature, sort feature
 
 // Polish
   // make it all look good
   // ensure safety of api keys and such. Check nothing sensitive on github.
+  // Minimize the loading times for things like signup() and login() to prevent enumeration attack
   // use appcheck to ensure no cracked clients and such
+  // make a custom form class for login and signup page
+  // make it so that all functions have a descriptor when you highlight them
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
-  // Don't just .catchError(), actually affect the error messages
+  // Don't just .catchError(), actually affect the error messages or show a snackbar
   // do network checks (while ur in quote)
+  // USe leading underscore (_) for best practice, see where you're supposed to use it
+  // Research other good practices
   // research and make good firebase security rules
+  // look at earlier made files for style guides (e.g. login page or globals)
+  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // make it from scratch on a diff firebase project, have only this on github
