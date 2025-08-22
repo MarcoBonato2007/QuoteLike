@@ -80,7 +80,16 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Next in line
+// Next in line  
+  // make a function for firestore error handling (the error handling and logger part)
+    // see settings_page.dart, see the code inside CatchError()
+  // use .timeout() on ALL firestore uses to ensure that network is there
+  // use .timeout() on ALL firebase auth uses (put in globals in firebaseautherrorcatch)
+
+  // figure out the confusion with Navigator.of(context).pop(), do i need to put it in async?
+  // why does it work on delete account and not login?
+  // check login, signup, logout and delete, forgot password, ALL OTHER!!!
+
   // finish settings page
   // Add the quotes, searchbar, like feature, sort feature
 
@@ -88,6 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // make it all look good
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack
+  // use .timeout() on firestore uses to ensure it doesn't take too long
   // use appcheck to ensure no cracked clients and such
   // make a custom form class for login and signup page
   // make it so that all functions have a descriptor when you highlight them
@@ -100,4 +110,5 @@ class _MyHomePageState extends State<MyHomePage> {
   // research and make good firebase security rules
   // look at earlier made files for style guides (e.g. login page or globals)
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
+  // research common security issues, ask chatgpt, try to find vulnerabilities
   // make it from scratch on a diff firebase project, have only this on github

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
 
+// TODO: add persistence to this value (just a simple key value pair, use that one library)
+bool isColorThemeLight = true; // if not light, it's dark
+
 /// Shows a non user dismissable CircularProgressIndicator() overlay
 void showLoadingIcon(BuildContext context) {
   showDialog(
@@ -110,6 +113,10 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
     else if (e.code == "network-request-failed") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.NETWORK_ERROR;
+    }
+    else if (e.code == "requires-recent-login") {
+      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
+      error = ErrorCodes.REQUIRES_RECENT_LOGIN;
     }
     else {
       log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
