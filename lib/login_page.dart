@@ -135,20 +135,30 @@ class _LoginPageState extends State<LoginPage>{
     (newEmailError, newPasswordError) = errorsForFields(
       await firebaseAuthErrorCatch(() async {
         await FirebaseAuth.instance.signOut();
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        UserCredential credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password
         );
+        if (credential.user!.emailVerified && mounted) {
+          // if we logged in a verified user, immediately remove loading icon
+          // otherwise login page is removed and we can't call it using this context
+          hideLoadingIcon(context);
+        }
       })
     );
 
-    // if login successful, but email not verified, then send verification email (if not too recent), show any error message and sign out
-    if (newEmailError == null && newPasswordError == null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-      // this error will be displayed using a snackbar, NOT a form errorText as usual
-      ErrorCode? error = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
-      newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
+    // If logged in and verified, we exit immediately
+    // The user is now on the MainPage() widget, so the current context is invalid
+    if (FirebaseAuth.instance.currentUser != null && FirebaseAuth.instance.currentUser!.emailVerified) {
+      return;
+    }
 
-      if (error != null && mounted) {
+    // If an unverified user logged in, tell them to verify / send them a verification email
+    if (FirebaseAuth.instance.currentUser != null) {
+      newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
+      ErrorCode? error = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
+
+      if (error != null && mounted) { // show any errors that came up trying to send email verification
         showToast(
           context,
           ErrorCodes.NO_VERIFICATION_EMAIL.errorText + error.errorText, 
@@ -161,17 +171,18 @@ class _LoginPageState extends State<LoginPage>{
           "A new verification email has been sent. Check your inbox.",
           Duration(seconds: 3)
         );   
-      }
+      }        
     }
 
     setState(() {
       emailError = newEmailError;
       passwordError = newPasswordError;
-    });
+    });     
 
     if (mounted) {
-      hideLoadingIcon(context);
+      hideLoadingIcon(context); 
     }
+  
   }
 
   @override
