@@ -28,21 +28,17 @@ class SettingsPage extends StatelessWidget {
   
   /// deletes currently logged in user, returns an error code
   Future<ErrorCode?> deleteUser(BuildContext context) async {
+    showLoadingIcon(context);
+
     final log = Logger("Deleting account");
 
     ErrorCode? error;
 
     // Remove user entry from firebase
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.email);
-    await userDocRef.delete().timeout(Duration(seconds: 5)).
-    catchError((firestoreError) {
-      if (firestoreError is TimeoutException) {
-        error = ErrorCodes.TIMEOUT;
-      }
-      else {
-        error = ErrorCodes.UNKNOWN_ERROR; 
-      }
-      log.severe("${log.name}: ${error!.errorText} firestore error: $firestoreError");
+    await userDocRef.delete().timeout(Duration(seconds: 5))
+    .catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
     });
     
     if (error != null) { // we always return the FIRST error encountered
@@ -50,8 +46,13 @@ class SettingsPage extends StatelessWidget {
     }
     
     error = await firebaseAuthErrorCatch(() async {
-      await FirebaseAuth.instance.currentUser!.delete();
+      await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
+
+    if (context.mounted) {
+      hideLoadingIcon(context);
+      Navigator.of(context).pop(); // remove confirmation dialog     
+    }
 
     return error;
   }
@@ -75,12 +76,12 @@ class SettingsPage extends StatelessWidget {
         SizedBox(height: 5),
         settingsButton("Log out", Icon(Icons.logout), () async {
           showLoadingIcon(context);
-          ErrorCode? error = await firebaseAuthErrorCatch(() async => await FirebaseAuth.instance.signOut());
-          if (error != null && context.mounted) {
-            showToast(context, error.errorText, Duration(seconds: 3));
-          }
+          ErrorCode? error = await firebaseAuthErrorCatch(() async => await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5)));
           if (context.mounted) {
             hideLoadingIcon(context);
+          }
+          if (error != null && context.mounted) {
+            showToast(context, error.errorText, Duration(seconds: 3));
           }
         }),
         settingsButton("Delete account", Icon(Icons.delete), () => showDialog( // show confirmation dialog
@@ -96,15 +97,8 @@ class SettingsPage extends StatelessWidget {
                 context, 
                 "Delete account", 
                 () async {
-                  showLoadingIcon(context);
                   ErrorCode? error = await deleteUser(context);
-                  if (error == null && context.mounted) {
-                    hideLoadingIcon(context);
-                    Navigator.of(context).pop(); // remove confirmation dialog
-                  }
-                  else if (error != null && context.mounted) {
-                    hideLoadingIcon(context);
-                    Navigator.of(context).pop(); // remove confirmation dialog
+                  if (error != null && context.mounted) {
                     showToast(
                       context, 
                       ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 

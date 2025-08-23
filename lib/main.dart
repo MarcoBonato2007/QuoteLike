@@ -65,11 +65,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+      builder: (BuildContext context, AsyncSnapshot<User?> userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }  
-        if (snapshot.hasData && snapshot.data!.emailVerified == true) { // go to main page
+        else if (userSnapshot.hasData && userSnapshot.data!.emailVerified == true) { // go to main page
           return MainPage();
         }
         else {
@@ -81,20 +81,16 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line  
-  // make a function for firestore error handling (the error handling and logger part)
-    // see settings_page.dart, see the code inside CatchError()
-  // use .timeout() on ALL firestore uses to ensure that network is there
-  // use .timeout() on ALL firebase auth uses (put in globals in firebaseautherrorcatch)
-
   // figure out the confusion with Navigator.of(context).pop(), do i need to put it in async?
   // why does it work on delete account and not login?
-  // check login, signup, logout and delete, forgot password, ALL OTHER!!!
+  // check this problem on login, logout and delete account (do this one last)
 
   // finish settings page
   // Add the quotes, searchbar, like feature, sort feature
 
 // Polish
   // make it all look good
+  // make all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack
   // use .timeout() on firestore uses to ensure it doesn't take too long
@@ -103,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // make it so that all functions have a descriptor when you highlight them
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // Don't just .catchError(), actually affect the error messages or show a snackbar
+  // Don't just .catchError(), actually affect the error messages or show a snackbar, remember to use .timeout() and the stuff in globals
   // do network checks (while ur in quote)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices

@@ -43,24 +43,22 @@ class _SignupPageState extends State<SignupPage>{
     await userDocRef.get().then((DocumentSnapshot docSnapshot) async {
       await userDocRef.set(userDocData);
       await userDocRef.collection("liked_quotes").doc("placeholder").set({});
-    }).catchError((firestoreError) {
-      log.severe("${log.name}: Unkown firestore error: $firestoreError");
-      error = ErrorCodes.UNKNOWN_ERROR;
+    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
     });
     if (error != null) { // we always return the FIRST error encountered
       return error;
     }
 
     // send the user email verification
-    error = await firebaseAuthErrorCatch(() async => await userCredential.user!.sendEmailVerification());
+    error = await firebaseAuthErrorCatch(() async => await userCredential.user!.sendEmailVerification().timeout(Duration(seconds: 5)));
     if (error != null) {
       return error;
     }
 
     userDocData["last_verification_email"] = DateTime.timestamp();
-    await userDocRef.set(userDocData).catchError((firestoreError) {
-      error = ErrorCodes.UNKNOWN_ERROR;
-      log.severe("${log.name}: Unkown firestore error: $firestoreError");
+    await userDocRef.set(userDocData).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
     });   
     
     return error;
@@ -84,7 +82,7 @@ class _SignupPageState extends State<SignupPage>{
         newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password
-        );
+        ).timeout(Duration(seconds: 5));
       }) 
     );
 

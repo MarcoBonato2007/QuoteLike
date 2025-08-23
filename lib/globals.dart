@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +82,24 @@ TextButton textButton(BuildContext context, String text, Function() onPressed) {
   );
 }
 
+
+/// Converts a firestore error into an ErrorCode and logs it with the given logger.
+/// 
+/// Goes in .catchError() after a firestore use. Remember to use .timeout() before.
+ErrorCode firestoreErrorHandler(Logger log, dynamic firestoreError) {
+  late final ErrorCode error;
+
+  if (firestoreError is TimeoutException) {
+    error = ErrorCodes.TIMEOUT;
+  }
+  else {
+    error = ErrorCodes.UNKNOWN_ERROR; 
+  }
+  log.severe("${log.name}: ${error.errorText} firestore error: $firestoreError");
+
+  return error;
+}
+
 /// try excepts a firebase auth function, returns an error message (see constants.dart)
 Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
   final log = Logger("Firebase auth error catch");
@@ -122,6 +142,10 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
       log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.UNKNOWN_ERROR;
     }
+  }
+  on TimeoutException catch (e, stackTrace) {
+    log.info("${log.name}: Firebase timeout caught error.", e, stackTrace);
+    error = ErrorCodes.TIMEOUT;
   }
   catch (e, stackTrace) { // catch any non-firebase errors
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);

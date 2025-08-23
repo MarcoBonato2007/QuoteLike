@@ -25,6 +25,26 @@ class _LoginPageState extends State<LoginPage>{
 
   bool obscurePassword = true;
 
+  Future<ErrorCode?> sendPasswordResetEmail(String email, Map userDocData) async {
+    final log = Logger("Sending password reset email");
+    ErrorCode? error;
+    
+    error = await firebaseAuthErrorCatch(() async {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email).timeout(Duration(seconds: 5));
+    });   
+    if (error != null) { // we always return the FIRST error encountered
+      return error;
+    }
+
+    userDocData["last_password_reset_email"] = DateTime.timestamp();
+    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
+    await userDocRef.set(userDocData).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
+    });
+
+    return error;
+  }
+
   /// Attempts to send user a password reset email, shows any relevant errors.
   /// 
   /// Some errors are not shown, to prevent an email enumeration attack.
@@ -40,21 +60,16 @@ class _LoginPageState extends State<LoginPage>{
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
     await userDocRef.get().then((DocumentSnapshot userDoc) async {
       if (userDoc.exists) { // we only do anything if the given email actually exists
-        Map<String, dynamic> userDocData = (await userDocRef.get()).data() as Map<String, dynamic>;
+        Map<String, dynamic> userDocData = userDoc.data() as Map<String, dynamic>;
         int minutesSinceLastPasswordResetEmail = DateTime.timestamp().difference(userDocData["last_password_reset_email"].toDate()).inMinutes;
         if (minutesSinceLastPasswordResetEmail >= 60 && mounted) {
           // attempt to send the password reset email, get any error messages
-          ErrorCode? error = await firebaseAuthErrorCatch(() async {
-            await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-            userDocData["last_password_reset_email"] = DateTime.timestamp();
-            await userDocRef.set(userDocData);
-          });   
+          ErrorCode? error = await sendPasswordResetEmail(email, userDocData);
           (newEmailError, newPasswordError) = errorsForFields(error);
         }
       }
-    }).catchError((firestoreError) {
-      (newEmailError, newPasswordError) = errorsForFields(ErrorCodes.UNKNOWN_ERROR);
-      log.severe("${log.name}: Unknown firestore error: $firestoreError");
+    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      (newEmailError, newPasswordError) = errorsForFields(firestoreErrorHandler(log, firestoreError));
     }); // catch any errors (ignored for now)
 
     // if no errors occurred, show success toast
@@ -87,9 +102,8 @@ class _LoginPageState extends State<LoginPage>{
     late final Map<String, dynamic> userDocData;
     await userDocRef.get().then((DocumentSnapshot userDocSnapshot) async {
       userDocData = userDocSnapshot.data() as Map<String, dynamic>;
-    }).catchError((firestoreError) {
-      error = ErrorCodes.UNKNOWN_ERROR;
-      log.severe("${log.name}: Unkown firestore error: $firestoreError");
+    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
     });
     if (error != null) { // we always return the FIRST error encountered
       return error;
@@ -104,7 +118,7 @@ class _LoginPageState extends State<LoginPage>{
     else {
       // send email verification
       error = await firebaseAuthErrorCatch(() async {
-        await FirebaseAuth.instance.currentUser!.sendEmailVerification();      
+        await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));      
       });
       if (error != null) { // we always return the FIRST error encountered
         return error;
@@ -112,9 +126,8 @@ class _LoginPageState extends State<LoginPage>{
 
       // set new email timestamp
       userDocData["last_verification_email"] = DateTime.timestamp();
-      await userDocRef.set(userDocData).catchError((firestoreError) {
-        error = ErrorCodes.UNKNOWN_ERROR;
-        log.severe("${log.name}: Unkown firestore error: $firestoreError");
+      await userDocRef.set(userDocData).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+        error = firestoreErrorHandler(log, firestoreError);
       });                
     }
 
@@ -134,27 +147,16 @@ class _LoginPageState extends State<LoginPage>{
     // Attempt to log the user in
     (newEmailError, newPasswordError) = errorsForFields(
       await firebaseAuthErrorCatch(() async {
-        await FirebaseAuth.instance.signOut();
-        UserCredential credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password
-        );
-        if (credential.user!.emailVerified && mounted) {
-          // if we logged in a verified user, immediately remove loading icon
-          // otherwise login page is removed and we can't call it using this context
-          hideLoadingIcon(context);
-        }
+        ).timeout(Duration(seconds: 5));
       })
     );
 
-    // If logged in and verified, we exit immediately
-    // The user is now on the MainPage() widget, so the current context is invalid
-    if (FirebaseAuth.instance.currentUser != null && FirebaseAuth.instance.currentUser!.emailVerified) {
-      return;
-    }
-
     // If an unverified user logged in, tell them to verify / send them a verification email
-    if (FirebaseAuth.instance.currentUser != null) {
+    if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
       newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
       ErrorCode? error = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
 
@@ -177,12 +179,11 @@ class _LoginPageState extends State<LoginPage>{
     setState(() {
       emailError = newEmailError;
       passwordError = newPasswordError;
-    });     
+    });          
 
     if (mounted) {
       hideLoadingIcon(context); 
     }
-  
   }
 
   @override
@@ -273,10 +274,16 @@ class _LoginPageState extends State<LoginPage>{
     final TextButton signupButton = textButton(
       context, 
       "Sign up",
-      () => Navigator.push(
-        context, 
-        MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
-      )
+      () {
+        setState(() {
+          emailError = null;
+          passwordError = null;
+        });
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
+        );
+      }
     );
 
     return Padding(
