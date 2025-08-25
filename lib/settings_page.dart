@@ -6,12 +6,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/theme_settings.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   /// Standardizes the style for a settings button used in the settings page
   Widget settingsButton(String text, Icon icon, Function() onPressed) {
     ElevatedButton mainButton = ElevatedButton.icon(
@@ -25,10 +32,10 @@ class SettingsPage extends StatelessWidget {
 
     return Row(children: [Expanded(child: mainButton)]);
   }
-  
+
   /// deletes currently logged in user, returns an error code
   Future<ErrorCode?> deleteUser(BuildContext context) async {
-    showLoadingIcon(context);
+    showLoadingIcon();
 
     final log = Logger("Deleting account");
 
@@ -49,10 +56,8 @@ class SettingsPage extends StatelessWidget {
       await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
 
-    if (context.mounted) {
-      hideLoadingIcon(context);
-      Navigator.of(context).pop(); // remove confirmation dialog     
-    }
+    hideLoadingIcon();
+    Navigator.of(navigatorKey.currentContext!).pop(); // remove confirmation dialog     
 
     return error;
   }
@@ -74,20 +79,43 @@ class SettingsPage extends StatelessWidget {
           )
         ),
         SizedBox(height: 5),
-        settingsButton("Log out", Icon(Icons.logout), () async {
-          showLoadingIcon(context);
-          ErrorCode? error = await firebaseAuthErrorCatch(() async => await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5)));
-          if (context.mounted) {
-            hideLoadingIcon(context);
-          }
-          if (error != null && context.mounted) {
-            showToast(context, error.errorText, Duration(seconds: 3));
-          }
-        }),
+        settingsButton("Log out", Icon(Icons.logout), () => showDialog( // show confirmation dialog
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            content: Text(
+              "Are you sure you want to log out?",
+              textAlign: TextAlign.center
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              BackButton( // back button
+                onPressed: () => Navigator.of(context).pop()  
+              ),
+              elevatedButton( // add back button
+                context, 
+                "Log out", 
+                () async {
+                  showLoadingIcon();
+                  ErrorCode? error = await firebaseAuthErrorCatch(() async {
+                    await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
+                  });
+                  hideLoadingIcon();
+                  Navigator.of(navigatorKey.currentContext!).pop(); // remove confirmation dialog
+                  if (error != null) {
+                    showToast(navigatorKey.currentContext!, error.errorText, Duration(seconds: 3));
+                  }                  
+                }
+              )
+            ]
+          )
+        )),
         settingsButton("Delete account", Icon(Icons.delete), () => showDialog( // show confirmation dialog
           context: context,
           builder: (BuildContext context) => AlertDialog(
-            content: Text("Are you sure you want to delete your account? This is non-reversible."),
+            content: Text(
+              "Are you sure you want to delete your account? This is non-reversible.",
+              textAlign: TextAlign.center
+            ),
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
               BackButton( // back button
@@ -98,9 +126,9 @@ class SettingsPage extends StatelessWidget {
                 "Delete account", 
                 () async {
                   ErrorCode? error = await deleteUser(context);
-                  if (error != null && context.mounted) {
+                  if (error != null) {
                     showToast(
-                      context, 
+                      navigatorKey.currentContext!, 
                       ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
                       Duration(seconds: 5)
                     );
@@ -110,8 +138,37 @@ class SettingsPage extends StatelessWidget {
             ]
           )
         )),
-        settingsButton("Privacy policy", Icon(Icons.privacy_tip), () {}), // TODO: add a privacy policy popup
-        settingsButton("Swap color theme", Icon(Icons.light_mode), () {}), // TODO: make it work, change icon depending on theme
+        settingsButton("Privacy policy", Icon(Icons.privacy_tip), () => showDialog(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            content: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Text(
+                  PRIVACY_POLICY,
+                  textAlign: TextAlign.center
+                ),
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.start,
+            actions: [
+              BackButton( // back button
+                onPressed: () => Navigator.of(context).pop()  
+              )
+            ]
+          )
+        )),
+        settingsButton(
+          "Swap color theme", 
+          Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
+          () async {
+            showLoadingIcon();
+            await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
+            setState(() {});
+            hideLoadingIcon();
+          }
+        ),
       ]
     );
   }

@@ -6,20 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
 
-// TODO: add persistence to this value (just a simple key value pair, use that one library)
-bool isColorThemeLight = true; // if not light, it's dark
+// this is used to access the new context after a login/logout (since that causes a screen switch)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Shows a non user dismissable CircularProgressIndicator() overlay
-void showLoadingIcon(BuildContext context) {
+void showLoadingIcon() {
   showDialog(
-    context: context,
+    context: navigatorKey.currentContext!,
     barrierDismissible: false,
     builder: (BuildContext context) => const Center(child: CircularProgressIndicator())
   );
 }
 
 /// Same as Navigator.of(context).pop(), used with showLoadingIcon()
-void hideLoadingIcon(BuildContext context) => Navigator.of(context).pop();
+void hideLoadingIcon() => Navigator.of(navigatorKey.currentContext!).pop();
 
 /// standardizes the style of ElevatedButtons used in this project.
 ElevatedButton elevatedButton(BuildContext context, String text, Function() onPressed) {

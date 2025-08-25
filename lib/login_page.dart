@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage>{
   Future<void> forgotPassword(String email) async {
     final log = Logger("Forgot password function");
 
-    showLoadingIcon(context);
+    showLoadingIcon();
 
     ErrorCode? newEmailError;
     ErrorCode? newPasswordError;
@@ -86,9 +86,7 @@ class _LoginPageState extends State<LoginPage>{
       passwordError = newPasswordError;
     });
 
-    if (mounted) {
-      hideLoadingIcon(context);
-    }
+    hideLoadingIcon();
   }
 
   /// Attempts to send a user a verification email (if one has not been sent too recently.)
@@ -139,7 +137,7 @@ class _LoginPageState extends State<LoginPage>{
   /// If user successfully logs in but is not verified, then a verification email is sent
   /// if another wasn't sent too recently.
   Future<void> login(String email, String password) async {
-    showLoadingIcon(context);
+    showLoadingIcon();
 
     ErrorCode? newEmailError; // new error messages (can be null)
     ErrorCode? newPasswordError;
@@ -176,14 +174,15 @@ class _LoginPageState extends State<LoginPage>{
       }        
     }
 
-    setState(() {
-      emailError = newEmailError;
-      passwordError = newPasswordError;
-    });          
-
-    if (mounted) {
-      hideLoadingIcon(context); 
+    // if the user logs in then the screen swaps and setstate can't be used, so we need this if statement
+    if (newEmailError != null || newPasswordError != null) {
+      setState(() {
+        emailError = newEmailError;
+        passwordError = newPasswordError;
+      });        
     }
+
+    hideLoadingIcon(); 
   }
 
   @override

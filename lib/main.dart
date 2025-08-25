@@ -2,8 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
+import 'package:quotebook/globals.dart';
 import 'package:quotebook/login_page.dart';
 import 'package:quotebook/main_page.dart';
+import 'package:quotebook/theme_settings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 // com.bonato.quotebook
@@ -34,20 +38,31 @@ void main() async {
       }
   });
 
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp( // we wrap this in a changenotifierprovider so it updates as the theme updates
+    ChangeNotifierProvider(
+      create: (context) => ThemeSettings(prefs.getBool("isColorThemeLight") ?? true),
+      child: Consumer<ThemeSettings>(
+        builder: (BuildContext context, ThemeSettings themeSettings, child) {
+          return MyApp(themeSettings);
+        }
+      )
+    )
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeSettings themeSettings;
+  const MyApp(this.themeSettings, {super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
-      ),
+      navigatorKey: navigatorKey,
+      theme: themeSettings.themeData,
       home: const MyHomePage(),
     );
   }
@@ -66,10 +81,11 @@ class _MyHomePageState extends State<MyHomePage> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (BuildContext context, AsyncSnapshot<User?> userSnapshot) {
+        // shows main page if logged in and verified, shows login page otherwsie
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }  
-        else if (userSnapshot.hasData && userSnapshot.data!.emailVerified == true) { // go to main page
+        else if (userSnapshot.hasData && userSnapshot.data!.emailVerified == true) {
           return MainPage();
         }
         else {
@@ -81,11 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line  
-  // figure out the confusion with Navigator.of(context).pop(), do i need to put it in async?
-  // why does it work on delete account and not login?
-  // check this problem on login, logout and delete account (do this one last)
-
-  // finish settings page
+  // add invert color theme to bottom of login page / signup page
   // Add the quotes, searchbar, like feature, sort feature
 
 // Polish
@@ -101,8 +113,11 @@ class _MyHomePageState extends State<MyHomePage> {
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // Don't just .catchError(), actually affect the error messages or show a snackbar, remember to use .timeout() and the stuff in globals
   // do network checks (while ur in quote)
+  // add splash screen (use the package)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
+  // find any screen switches, check if you need to use navigatorKey anywhere. NO USE OF CONTEXT ANYWHERE after a screen switch (setState included)
+  // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
   // look at earlier made files for style guides (e.g. login page or globals)
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).

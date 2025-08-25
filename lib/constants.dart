@@ -24,6 +24,4 @@ class ErrorCodes {
 const String PRIVACY_POLICY = """
   Hello
   This is an example privacy policy  
-  There is nothing here yet
-  MAKE THIS LONG TO TEST SCROLLBAR CAPABILITY
-""";
+  There is nothing here yet""";

@@ -69,7 +69,7 @@ class _SignupPageState extends State<SignupPage>{
   /// The user is not made aware if they are signing up an already existing user.
   /// This is to prevent an email enumeration attack.
   Future<void> signup(String email, String password) async {    
-    showLoadingIcon(context);
+    showLoadingIcon();
 
     // new error messages (can be null)
     ErrorCode? newEmailError;
@@ -111,9 +111,7 @@ class _SignupPageState extends State<SignupPage>{
       }
     });
 
-    if (mounted) {
-      hideLoadingIcon(context);
-    }
+    hideLoadingIcon();
   }
 
   @override
