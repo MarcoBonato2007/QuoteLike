@@ -39,7 +39,6 @@ void main() async {
   });
 
   final prefs = await SharedPreferences.getInstance();
-
   runApp( // we wrap this in a changenotifierprovider so it updates as the theme updates
     ChangeNotifierProvider(
       create: (context) => ThemeSettings(prefs.getBool("isColorThemeLight") ?? true),
@@ -97,17 +96,20 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line  
-  // add invert color theme to bottom of login page / signup page
-
   // Add the quotes, searchbar, like feature, sort feature
-    // quote docs should have a timestamp, author name, content, and total likes
+    // quote docs should have a creation timestamp, author name, content, and total likes (don't add a liked_by collection for now, see later if necessary)
     // remember to update liked_quotes collection in user docs when liking / unliking, along with total likes on quote doc
     // like feature should update total likes 
     // make the card look good. Consider adding stylized quote symbols.
     // Make the cards change colors slightly, consider a subtle polychrome effect to make it look good
     // add like and dislike animations and so on
+    // the search button needs to have a little selection menu saying if you want to search by author or by content
 
 // Polish
+  // Are there any extra features you're bothered to add.
+    // e.g. clicking on an author name redirects you to their wikipedia
+    // e.g. storing the source of a quote, for example from a book, or spoken, or on social media, etc.
+
   // make it all look good
   // make all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.

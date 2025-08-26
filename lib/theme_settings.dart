@@ -18,7 +18,7 @@ class ThemeSettings extends ChangeNotifier {
   Future<void> invertColorTheme() async {
     isColorThemeLight = !isColorThemeLight;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("isColorThemeLight", !isColorThemeLight);
+    await prefs.setBool("isColorThemeLight", isColorThemeLight);
     notifyListeners();
   }
 }
