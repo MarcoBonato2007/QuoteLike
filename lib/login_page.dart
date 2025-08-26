@@ -3,9 +3,12 @@ import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/settings_page.dart';
 import 'package:quotebook/signup_page.dart';
+import 'package:quotebook/theme_settings.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -307,7 +310,18 @@ class _LoginPageState extends State<LoginPage>{
               Text("Don't have an account?"),
               signupButton
             ]
-          )
+          ),
+          SizedBox(height: 5),
+          settingsButton(
+            "Swap color theme", 
+            Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
+            () async {
+              showLoadingIcon();
+              await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
+              setState(() {});
+              hideLoadingIcon();
+            }
+          ),
         ]
       ),
     );

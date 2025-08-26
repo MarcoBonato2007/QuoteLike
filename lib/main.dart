@@ -98,7 +98,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // Next in line  
   // add invert color theme to bottom of login page / signup page
+
   // Add the quotes, searchbar, like feature, sort feature
+    // quote docs should have a timestamp, author name, content, and total likes
+    // remember to update liked_quotes collection in user docs when liking / unliking, along with total likes on quote doc
+    // like feature should update total likes 
+    // make the card look good. Consider adding stylized quote symbols.
+    // Make the cards change colors slightly, consider a subtle polychrome effect to make it look good
+    // add like and dislike animations and so on
 
 // Polish
   // make it all look good

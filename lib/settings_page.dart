@@ -11,6 +11,22 @@ import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
 import 'package:quotebook/theme_settings.dart';
 
+/// Standardizes the style for a settings button used in the settings page
+///
+/// Used by login and signup pages aswell for the swap color theme button
+Widget settingsButton(String text, Icon icon, Function() onPressed) {
+  ElevatedButton mainButton = ElevatedButton.icon(
+    label: Text(text),
+    icon: icon,
+    style: ElevatedButton.styleFrom(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10)) 
+    ),
+    onPressed: onPressed
+  );
+
+  return Row(children: [Expanded(child: mainButton)]);
+}
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -19,20 +35,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  /// Standardizes the style for a settings button used in the settings page
-  Widget settingsButton(String text, Icon icon, Function() onPressed) {
-    ElevatedButton mainButton = ElevatedButton.icon(
-      label: Text(text),
-      icon: icon,
-      style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10)) 
-      ),
-      onPressed: onPressed
-    );
-
-    return Row(children: [Expanded(child: mainButton)]);
-  }
-
   /// deletes currently logged in user, returns an error code
   Future<ErrorCode?> deleteUser(BuildContext context) async {
     showLoadingIcon();

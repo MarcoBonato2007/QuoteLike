@@ -82,7 +82,6 @@ TextButton textButton(BuildContext context, String text, Function() onPressed) {
   );
 }
 
-
 /// Converts a firestore error into an ErrorCode and logs it with the given logger.
 /// 
 /// Goes in .catchError() after a firestore use. Remember to use .timeout() before.
