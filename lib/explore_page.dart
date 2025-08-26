@@ -58,18 +58,24 @@ class _ExplorePageState extends State<ExplorePage> {
       // a like button!
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.only(top: 10, bottom: 10, left: 20, right: 20),
+        padding: const EdgeInsets.only(top: 10, bottom: 10, left: 15, right: 15),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('“$quote”', style: TextStyle(fontSize: 30), textAlign: TextAlign.center),
-                Align(alignment: Alignment.centerLeft, child: Text("- $author", style: TextStyle(fontSize: 25), textAlign: TextAlign.start))
-              ]
+            SizedBox(
+              width: 290,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // TODO: resize text automatically to not make the card expand (decide on a fixed card size)
+                  Text('“$quote”', style: TextStyle(fontSize: 20), textAlign: TextAlign.center),
+                  // TODO: make the author text align with the quote
+                  Align(alignment: Alignment.centerLeft, child: Text("- $author", style: TextStyle(fontSize: 15), textAlign: TextAlign.start))
+                ]
+              ),
             ),
             InkWell(
-              borderRadius: BorderRadius.circular(50),
+              borderRadius: BorderRadius.circular(10),
               onTap: () {
                 // TODO: Make this work
                   // Update liked in the quote doc
@@ -137,7 +143,7 @@ class _ExplorePageState extends State<ExplorePage> {
           ]
         ),
         SizedBox(height: 15),
-        quoteCard("boom shakalaka", "H.G. Wells")
+        quoteCard("Should we be sad because a rose has thorns, or happy because thorns have a rose?", "H.G. Wells")
       ]
     );
   }
