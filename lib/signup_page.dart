@@ -3,8 +3,11 @@ import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/settings_page.dart';
+import 'package:quotebook/theme_settings.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -274,7 +277,18 @@ class _SignupPageState extends State<SignupPage>{
               Text("Already have an account?"),
               loginButton
             ]
-          )
+          ),
+          SizedBox(height: 5),
+          settingsButton(
+            "Swap color theme", 
+            Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
+            () async {
+              showLoadingIcon();
+              await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
+              setState(() {});
+              hideLoadingIcon();
+            }
+          ),
         ]
       ),
     );
