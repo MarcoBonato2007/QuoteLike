@@ -54,18 +54,55 @@ class _ExplorePageState extends State<ExplorePage> {
     Card mainCard = Card(
       // TODO: Needs lots of formatting to make it look good
       // Check online for ideas!
+
+      // a like button!
+      elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.only(top: 10, bottom: 10),
-        child: Column(
+        padding: const EdgeInsets.only(top: 10, bottom: 10, left: 20, right: 20),
+        child: Row(
           children: [
-            Text('“$quote”'),
-            Text("- $author")
-          ]
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('“$quote”', style: TextStyle(fontSize: 30), textAlign: TextAlign.center),
+                Align(alignment: Alignment.centerLeft, child: Text("- $author", style: TextStyle(fontSize: 25), textAlign: TextAlign.start))
+              ]
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(50),
+              onTap: () {
+                // TODO: Make this work
+                  // Update liked in the quote doc
+                  // Update liked quotes in the user doc
+                  // set state to update the card (make a separate stateful widget for the card)
+              },
+              child: Padding(
+                padding: EdgeInsetsGeometry.all(5),
+                child: Column(
+                  children: [
+                    Icon(Icons.favorite_border), // TODO: change depending on liked status, Icons.favorite in red color
+                    Text( // TODO: make this the number of likes, add shortenings (e.g. k or million, max ?? digits)
+                      "543",
+                      style: TextStyle(color: ColorScheme.of(context).onSurfaceVariant)
+                    ) 
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       )
     );
 
+    // TODO: add double tap to like
+
     return Row(children: [Expanded(child: mainCard)]);
+  }
+
+  Future<void> getQuotes() async {
+    // Remember to take filter and sort into account
+    // figure out how to best get the NEXT x quotes
+      // last time u did this by storing the id of the last quote currently loaded in
   }
 
   @override
@@ -100,7 +137,7 @@ class _ExplorePageState extends State<ExplorePage> {
           ]
         ),
         SizedBox(height: 15),
-        quoteCard("This is not a real quote", "HG wells")
+        quoteCard("boom shakalaka", "H.G. Wells")
       ]
     );
   }
