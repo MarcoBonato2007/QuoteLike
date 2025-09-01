@@ -95,15 +95,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Next in line  
-  // Add the quotes, searchbar, like feature, sort feature
-    // quote docs should have a creation timestamp, author name, content, and total likes (don't add a liked_by collection for now, see later if necessary)
+// Next in line
+  // make the like feature work on quotes
     // remember to update liked_quotes collection in user docs when liking / unliking, along with total likes on quote doc
     // like feature should update total likes 
-    // make the card look good. Consider adding stylized quote symbols.
-    // Make the cards change colors slightly, consider a subtle polychrome effect to make it look good
-    // add like and dislike animations and so on
-    // the search button needs to have a little selection menu saying if you want to search by author or by content
+  // make the search bar work
 
 // Polish
   // Are there any extra features you're bothered to add.
@@ -125,10 +121,13 @@ class _MyHomePageState extends State<MyHomePage> {
   // add splash screen (use the package)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
+  // do internet checks
+  // try adding @override init and @override dispose (dispose controllers, keys, etc.)
   // find any screen switches, check if you need to use navigatorKey anywhere. NO USE OF CONTEXT ANYWHERE after a screen switch (setState included)
   // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
   // look at earlier made files for style guides (e.g. login page or globals)
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
-  // research common security issues, ask chatgpt, try to find vulnerabilities
+  // research common security issues, ask chatgpt, try to find 
+  // check for consistency of things like error handling approaches between files
   // make it from scratch on a diff firebase project, have only this on github

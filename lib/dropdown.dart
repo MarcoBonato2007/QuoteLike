@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class Dropdown extends StatelessWidget {
   final BuildContext context;
+  final GlobalKey<FormFieldState> fieldKey;
   final List<Map<String, String>> options;
   final String hintText;
   final double width;
   final Icon? icon;
   final double? trailingPadding;
+  final PagingController? pagingController; // call .refresh after changing sort or filter
   const Dropdown(
     this.context,
+    this.fieldKey,
     this.options,
     this.hintText,
     this.width,
     {
       this.icon,
       this.trailingPadding,
+      this.pagingController,
       super.key
     }
   );
@@ -22,9 +27,14 @@ class Dropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
+      key: fieldKey,
       elevation: 2,
       hint: Text(hintText),
-      onChanged: (dynamic newValue) {},
+      onChanged: (dynamic newValue) {
+        if (pagingController != null) {
+          pagingController!.refresh();
+        }
+      },
       decoration: InputDecoration(
         prefixIcon: icon,
         border: OutlineInputBorder(),

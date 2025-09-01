@@ -1,10 +1,13 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class QuoteCard extends StatefulWidget {
   final String quote;
   final String author;
-  const QuoteCard(this.quote, this.author, {super.key});
+  final Timestamp creation;
+  final int likes;
+  const QuoteCard(this.quote, this.author, this.creation, this.likes, {super.key});
 
   @override
   State<QuoteCard> createState() => _QuoteCardState();
@@ -63,8 +66,8 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
         child: Column(
           children: [
             likeIcon,
-            Text( // TODO: make this the number of likes, add shortenings (e.g. k or million, max ?? digits)
-              "543",
+            Text( // TODO: add shortenings (e.g. k or million, max ?? digits)
+              "${widget.likes}",
               style: TextStyle(color: ColorScheme.of(context).onSurface)
             ) 
           ],
@@ -88,7 +91,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
           Align(
             alignment: Alignment.centerLeft, 
             child: Text(
-              '“${widget.author}”', 
+              '- ${widget.author}', 
               textAlign: TextAlign.start,
               style: TextStyle(fontSize: 15), 
             )

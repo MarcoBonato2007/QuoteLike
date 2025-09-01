@@ -20,13 +20,7 @@ class _MainPageState extends State<MainPage> {
         child: IndexedStack(
           index: currentPageIndex,
           children: [
-            Scaffold(
-              appBar: AppBar(
-                title: Text("Explore"),
-                centerTitle: true,
-              ),
-              body: ExplorePage()
-            ),
+            ExplorePage(),
             Scaffold(
               appBar: AppBar(
                 title: Text("Settings"),
