@@ -6,8 +6,14 @@
   // Can be stored in their doc in a collection, e.g. "custom_quotes"
   // will need max length / max size limits
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:logging/logging.dart';
+import 'package:quotebook/constants.dart';
 import 'package:quotebook/dropdown.dart';
+import 'package:quotebook/globals.dart';
 import 'package:quotebook/quote_card.dart';
 import 'package:quotebook/quote_search_bar.dart';
 
@@ -19,16 +25,112 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
-  /// Gets the next ??? quotes for the user to scroll
-  Future<void> getQuotes() async {
-    // Remember to take filter and sort into account
-    // figure out how to best get the NEXT x quotes
-      // last time u did this by storing the id of the last quote currently loaded in
-    // turn them into quote card objects!
+  final sortKey = GlobalKey<FormFieldState>();
+  final filterKey = GlobalKey<FormFieldState>();
+  DocumentSnapshot? lastQuoteDoc;
+
+  late final PagingController<int, QuoteCard> pagingController;
+
+  @override
+  void initState() {
+    pagingController = PagingController<int, QuoteCard>(
+      getNextPageKey: (state) => state.lastPageIsEmpty ? null : 0,
+      fetchPage: (pageKey) async {
+        ErrorCode? error;
+        List<QuoteCard>? newQuotes;
+        (error, newQuotes) = await getNextQuotes();
+        if (error != null) {
+          showToast(context, error.errorText, Duration(seconds: 3));
+        }
+        return newQuotes; // empty if there is an error
+      }
+    );
+    pagingController.addListener(() {
+      if (pagingController.items == null || pagingController.items!.isEmpty) {
+        setState(() {lastQuoteDoc = null;});
+      }
+    });
+    super.initState();
+  }
+
+  /// Gets the next 10 quotes to scroll after lastQuoteDoc
+  /// 
+  /// Returns any errors along with the list of new quotes
+  Future<(ErrorCode?, List<QuoteCard>)> getNextQuotes() async {
+    final log = Logger("Getting quotes to scroll");
+
+    ErrorCode? error;
+
+    String? filter = filterKey.currentState!.value;
+    String? sort = sortKey.currentState!.value;
+
+    Query query = FirebaseFirestore.instance.collection("quotes");
+    List<QuoteCard> queryResults = [];
+
+
+    if (filter != "None" && filter != null) {
+      List<String> likedQuotes = [];
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .collection("liked_quotes")
+      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
+          for (DocumentSnapshot doc in querySnapshot.docs) {
+            likedQuotes.add(doc.id);
+          }
+      }).catchError((firestoreError) {
+        error = firestoreErrorHandler(log, firestoreError);
+      });
+      if (error != null) { // we always return at the FIRST error encountered
+        return (error, queryResults);
+      }
+
+      if (filter == "Liked") {
+        query = query.where(FieldPath.documentId, whereIn: likedQuotes);
+      }
+      else if (filter == "Not liked") {
+        query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
+      }
+    }
+    
+    if (sort == "Random") {
+      // query = query.orderBy(FieldPath.documentId);
+    }
+    else if (sort == "Most liked") {
+      query = query.orderBy("likes", descending: true);
+    }
+    else if (sort == "Least liked") {
+      query = query.orderBy("likes", descending: false);
+    }
+    else if (sort == "Recent") {
+      query = query.orderBy("creation", descending: true);
+    }
+
+    if (lastQuoteDoc != null) {
+      query = query.startAfterDocument(lastQuoteDoc!);
+    }
+  
+    query = query.limit(10);
+
+    await query.get().then((QuerySnapshot querySnapshot) {
+      for (DocumentSnapshot doc in querySnapshot.docs) {
+        if (doc.id == "placeholder") {continue;}
+        lastQuoteDoc = doc;
+        queryResults.add(QuoteCard(
+          doc["content"], doc["author"], doc["creation"], doc["likes"]
+        ));
+      }
+    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
+    });
+
+    return (error, queryResults);
   }
 
   @override
   Widget build(BuildContext context) {
+    // we don't actually use page key, we use lastQuoteDoc
+
     List<Map<String, String>> filterOptions = [
       {"value": "None", "label": "None"},
       {"value": "Liked", "label": "Liked by you"},
@@ -41,29 +143,47 @@ class _ExplorePageState extends State<ExplorePage> {
       {"value": "Recent", "label": "Recent"},
     ];
 
-    return Column(
-      children: [
-        QuoteSearchBar(),
-        SizedBox(height: 15),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
-          children: [
-            Dropdown(context, filterOptions, "Filter", 155, icon: Icon(Icons.filter_list)),
-            Dropdown(context, sortOptions, "Sort", 155, icon: Icon(Icons.sort)),
-          ]
-        ),
-        SizedBox(height: 15),
-        // TODO: add scrollable list with async loading from database
-        QuoteCard("I have no special talent. I am only passionately curious.", "Albert Einstein")
-      ]
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Explore"),
+        centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton(
+        elevation: 2,
+        backgroundColor: ColorScheme.of(context).primary,
+        foregroundColor: ColorScheme.of(context).surface,
+        child: Icon(Icons.refresh),
+        onPressed: () => throttledFunc(1000, () => pagingController.refresh())
+      ),
+      body: Column(
+        children: [
+          QuoteSearchBar(),
+          SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
+            children: [
+              Dropdown(context, filterKey, filterOptions, "Filter", 155, icon: Icon(Icons.filter_list), pagingController: pagingController),
+              Dropdown(context, sortKey, sortOptions, "Sort", 155, icon: Icon(Icons.sort), pagingController: pagingController),
+            ]
+          ),
+          SizedBox(height: 15),
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height-300,
+            child: PagingListener(
+              controller: pagingController,
+              builder: (context, state, fetchNextPage) => PagedListView(
+                state: state,
+                fetchNextPage: fetchNextPage,
+                builderDelegate: PagedChildBuilderDelegate<QuoteCard>(
+                  itemBuilder: (context, item, index) => item
+                )
+              )
+            ),
+          ),
+        ]
+      ),
     );
   }
 }
-
-// In future:
-  // Creating custom quotes
-    // Put an extra filter option (created by you) on filter button
-    // Put a button at the bottom to create a quote (floating action button for explore page)
-  // Extend the button on the bottom to suggest a public quote
-  // Extend the sort button (top this month, top today, top this year, etc.)

@@ -5,6 +5,7 @@ class QuoteSearchBar extends StatelessWidget {
   QuoteSearchBar({super.key});
 
   final controller = TextEditingController();
+  final fieldKey = GlobalKey<FormFieldState>();
 
   /// Performs the search and returns quotes as results, ranked
   Future<void> search(String input) async {
@@ -20,7 +21,7 @@ class QuoteSearchBar extends StatelessWidget {
 
     return SearchBar(
       controller: controller,
-      leading: Dropdown(context, searchOptions, "Search by", 110, trailingPadding: 5),
+      leading: Dropdown(context, fieldKey, searchOptions, "Search by", 110, trailingPadding: 5),
       trailing: [IconButton(
         icon: Icon(Icons.search),
         onPressed: () async => await search(controller.text)
