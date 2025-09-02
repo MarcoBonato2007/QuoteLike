@@ -67,24 +67,23 @@ class _ExplorePageState extends State<ExplorePage> {
     Query query = FirebaseFirestore.instance.collection("quotes");
     List<QuoteCard> queryResults = [];
 
+    List<String> likedQuotes = []; // a list of id's of quotes liked by the user
+    await FirebaseFirestore.instance
+      .collection("users")
+      .doc(FirebaseAuth.instance.currentUser!.email)
+      .collection("liked_quotes")
+    .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
+        for (DocumentSnapshot doc in querySnapshot.docs) {
+          likedQuotes.add(doc.id);
+        }
+    }).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
+    });
+    if (error != null) { // we always return at the FIRST error encountered
+      return (error, queryResults);
+    }
 
     if (filter != "None" && filter != null) {
-      List<String> likedQuotes = [];
-      await FirebaseFirestore.instance
-        .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.email)
-        .collection("liked_quotes")
-      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
-          for (DocumentSnapshot doc in querySnapshot.docs) {
-            likedQuotes.add(doc.id);
-          }
-      }).catchError((firestoreError) {
-        error = firestoreErrorHandler(log, firestoreError);
-      });
-      if (error != null) { // we always return at the FIRST error encountered
-        return (error, queryResults);
-      }
-
       if (filter == "Liked") {
         query = query.where(FieldPath.documentId, whereIn: likedQuotes);
       }
@@ -117,7 +116,12 @@ class _ExplorePageState extends State<ExplorePage> {
         if (doc.id == "placeholder") {continue;}
         lastQuoteDoc = doc;
         queryResults.add(QuoteCard(
-          doc["content"], doc["author"], doc["creation"], doc["likes"]
+          doc.id, 
+          doc["content"], 
+          doc["author"], 
+          doc["creation"], 
+          doc["likes"],
+          likedQuotes.contains(doc.id)
         ));
       }
     }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
