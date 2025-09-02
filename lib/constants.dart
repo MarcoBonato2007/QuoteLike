@@ -17,11 +17,10 @@ class ErrorCodes {
   static const ErrorCode EMAIL_ALREADY_IN_USE = ErrorCode("This email is already in use"); // never actually shown to the user
   static const ErrorCode HIGHLIGHT_RED = ErrorCode(""); // blank error text highlights a text field red
   static const ErrorCode VERIFICATION_EMAIL_SENT_RECENTLY = ErrorCode("A verification email was already sent recently. Check your inbox.");
-  static const ErrorCode TIMEOUT = ErrorCode("Request timed out. Try again later.");
+  static const ErrorCode TIMEOUT = ErrorCode("Request timed out. Check your connnection and try again later.");
   static const ErrorCode REQUIRES_RECENT_LOGIN = ErrorCode("This requires recent login. Please logout and login again.");
 }
 
-const String PRIVACY_POLICY = """
-  Hello
+const String PRIVACY_POLICY = """Hello
   This is an example privacy policy  
   There is nothing here yet""";

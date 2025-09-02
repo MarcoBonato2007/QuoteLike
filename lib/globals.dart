@@ -94,6 +94,7 @@ ErrorCode firestoreErrorHandler(Logger log, dynamic firestoreError) {
   else {
     error = ErrorCodes.UNKNOWN_ERROR; 
   }
+
   log.severe("${log.name}: ${error.errorText} firestore error: $firestoreError");
 
   return error;
@@ -171,7 +172,7 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
 /// Create a function that can only be called throttleTimeMs milliseconds from the last time it was called
-void throttledFunc(int throttleTimeMs, Function() func) async { // only allow action once every second at most
+void throttledFunc(int throttleTimeMs, Function() func) async {
   if (DateTime.timestamp().difference(lastAction).inMilliseconds >= throttleTimeMs) {
     await func();
     lastAction = DateTime.timestamp();

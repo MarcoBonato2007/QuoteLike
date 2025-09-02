@@ -96,10 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line
-  // make the like feature work on quotes
-    // remember to update liked_quotes collection in user docs when liking / unliking, along with total likes on quote doc
-    // like feature should update total likes 
   // make the search bar work
+  // fix the failed to get service from broker error
 
 // Polish
   // Are there any extra features you're bothered to add.
@@ -113,6 +111,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // use .timeout() on firestore uses to ensure it doesn't take too long
   // use appcheck to ensure no cracked clients and such
   // make a custom form class for login and signup page
+  // try adding firestore functions to take care of corrupted / incomplete docs or collections
+    // e.g. ensuring all users have a liked_quotes collection
   // make it so that all functions have a descriptor when you highlight them
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things

@@ -1,36 +1,81 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
+import 'package:quotebook/constants.dart';
+import 'package:quotebook/globals.dart';
 
 class QuoteCard extends StatefulWidget {
+  final String id;
   final String quote;
   final String author;
   final Timestamp creation;
   final int likes;
-  const QuoteCard(this.quote, this.author, this.creation, this.likes, {super.key});
+  final bool isLiked;
+  const QuoteCard(this.id, this.quote, this.author, this.creation, this.likes, this.isLiked, {super.key});
 
   @override
   State<QuoteCard> createState() => _QuoteCardState();
 }
 
 class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
-  bool userLikedQuote = false;
+  late bool userLikedQuote;
 
-  /// Returns whether the logged in user liked this quote or not.
-  Future<bool> didUserLikeQuote(String quoteId) async {
-    // TODO: make this work.
-    return false;
+  @override
+  void initState() {
+    userLikedQuote = widget.isLiked;
+    super.initState();
   }
 
   /// Likes the quote if already liked, or removes the like if not
-  Future<void> likeQuote() async {
+  Future<ErrorCode?> likeQuote() async {
+    final log = Logger("Adding/removing likes");
+    ErrorCode? error;
 
-    setState(() => userLikedQuote = !userLikedQuote);
+    var db = FirebaseFirestore.instance;
+    DocumentReference quoteDoc = db.collection("quotes").doc(widget.id);
+    await quoteDoc.update({
+      "likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)
+    })
+    .timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
+    });
+    if (error != null) { // we always return the first error encoutnered
+      return error;
+    }
 
-    // TODO: Make this work
-      // Update liked in the quote doc
-      // Update liked quotes in the user doc
-      // set state to update the card (make a separate stateful widget for the card)
+    DocumentReference userLikedQuoteDoc = db // this doc exists if the user liked this quote
+      .collection("users")
+      .doc(FirebaseAuth.instance.currentUser!.email)
+      .collection("liked_quotes")
+    .doc(widget.id);
+    await userLikedQuoteDoc.get().then((DocumentSnapshot docSnapshot) async {
+      if (docSnapshot.exists && !userLikedQuote) {
+        await userLikedQuoteDoc.delete();
+      }
+      else if (userLikedQuote) {
+        Map<String, dynamic> newData = {};
+        await userLikedQuoteDoc.set(newData);
+      }
+    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
+      error = firestoreErrorHandler(log, firestoreError);
+    });
+
+    return error;
+  }
+
+  String formatLikes() {
+    int effectiveLikes = widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0);
+    if (effectiveLikes >= 1000000) {
+      return "${(effectiveLikes/1000000).toStringAsFixed(1)}m";
+    }
+    else if (effectiveLikes >= 1000) {
+      return "${(effectiveLikes/1000).toStringAsFixed(1)}k";
+    }
+    else {
+      return "$effectiveLikes";
+    }
   }
 
   @override
@@ -58,16 +103,28 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
       ),
     );
 
-    InkWell likeButton = InkWell( // TODO: add hover color to both text and like button (maybe do it thru the inkwell)
+    InkWell likeButton = InkWell(
+      onTap: () async => throttledFunc(1000, () async {
+        showLoadingIcon();
+        setState(() => userLikedQuote = !userLikedQuote);
+        ErrorCode? error = await likeQuote();
+        if (error != null && context.mounted) {
+          showToast(
+            context, 
+            "${error.errorText} Your ${userLikedQuote ? "" : "dis"}like may not have registered.", 
+            Duration(seconds: 5)
+          );
+        }
+        hideLoadingIcon();
+      }),
       borderRadius: BorderRadius.circular(10),
-      onTap: () async => await likeQuote(),
       child: Padding(
         padding: EdgeInsetsGeometry.all(5),
         child: Column(
           children: [
             likeIcon,
-            Text( // TODO: add shortenings (e.g. k or million, max ?? digits)
-              "${widget.likes}",
+            Text(
+              formatLikes(),
               style: TextStyle(color: ColorScheme.of(context).onSurface)
             ) 
           ],
