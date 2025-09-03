@@ -96,15 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Next in line
-  // make the search bar work
   // fix the failed to get service from broker error
 
 // Polish
-  // Are there any extra features you're bothered to add.
-    // e.g. clicking on an author name redirects you to their wikipedia
-    // e.g. storing the source of a quote, for example from a book, or spoken, or on social media, etc.
-
   // make it all look good
+  // add more pre internet checks (add in global, make an internetCheck() function or smth)
   // make all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack

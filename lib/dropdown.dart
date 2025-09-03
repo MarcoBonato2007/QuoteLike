@@ -10,6 +10,7 @@ class Dropdown extends StatelessWidget {
   final Icon? icon;
   final double? trailingPadding;
   final PagingController? pagingController; // call .refresh after changing sort or filter
+  final String? initialValue;
   const Dropdown(
     this.context,
     this.fieldKey,
@@ -20,6 +21,7 @@ class Dropdown extends StatelessWidget {
       this.icon,
       this.trailingPadding,
       this.pagingController,
+      this.initialValue,
       super.key
     }
   );
@@ -27,6 +29,7 @@ class Dropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
+      value: initialValue,
       key: fieldKey,
       elevation: 2,
       hint: Text(hintText),

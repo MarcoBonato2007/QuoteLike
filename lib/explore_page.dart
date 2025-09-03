@@ -7,7 +7,6 @@
   // will need max length / max size limits
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
@@ -15,10 +14,10 @@ import 'package:quotebook/constants.dart';
 import 'package:quotebook/dropdown.dart';
 import 'package:quotebook/globals.dart';
 import 'package:quotebook/quote_card.dart';
-import 'package:quotebook/quote_search_bar.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+  final List<String> likedQuotes;
+  const ExplorePage(this.likedQuotes, {super.key});
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -38,7 +37,7 @@ class _ExplorePageState extends State<ExplorePage> {
       fetchPage: (pageKey) async {
         ErrorCode? error;
         List<QuoteCard>? newQuotes;
-        (error, newQuotes) = await getNextQuotes();
+        (error, newQuotes) = await getNextQuotesToScroll();
         if (error != null) {
           showToast(context, error.errorText, Duration(seconds: 3));
         }
@@ -56,7 +55,7 @@ class _ExplorePageState extends State<ExplorePage> {
   /// Gets the next 10 quotes to scroll after lastQuoteDoc
   /// 
   /// Returns any errors along with the list of new quotes
-  Future<(ErrorCode?, List<QuoteCard>)> getNextQuotes() async {
+  Future<(ErrorCode?, List<QuoteCard>)> getNextQuotesToScroll() async {
     final log = Logger("Getting quotes to scroll");
 
     ErrorCode? error;
@@ -67,28 +66,12 @@ class _ExplorePageState extends State<ExplorePage> {
     Query query = FirebaseFirestore.instance.collection("quotes");
     List<QuoteCard> queryResults = [];
 
-    List<String> likedQuotes = []; // a list of id's of quotes liked by the user
-    await FirebaseFirestore.instance
-      .collection("users")
-      .doc(FirebaseAuth.instance.currentUser!.email)
-      .collection("liked_quotes")
-    .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
-        for (DocumentSnapshot doc in querySnapshot.docs) {
-          likedQuotes.add(doc.id);
-        }
-    }).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
-    });
-    if (error != null) { // we always return at the FIRST error encountered
-      return (error, queryResults);
-    }
-
     if (filter != "None" && filter != null) {
       if (filter == "Liked") {
-        query = query.where(FieldPath.documentId, whereIn: likedQuotes);
+        query = query.where(FieldPath.documentId, whereIn: widget.likedQuotes);
       }
       else if (filter == "Not liked") {
-        query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
+        query = query.where(FieldPath.documentId, whereNotIn: widget.likedQuotes);
       }
     }
     
@@ -121,7 +104,7 @@ class _ExplorePageState extends State<ExplorePage> {
           doc["author"], 
           doc["creation"], 
           doc["likes"],
-          likedQuotes.contains(doc.id)
+          widget.likedQuotes.contains(doc.id)
         ));
       }
     }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
@@ -161,7 +144,6 @@ class _ExplorePageState extends State<ExplorePage> {
       ),
       body: Column(
         children: [
-          QuoteSearchBar(),
           SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
