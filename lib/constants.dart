@@ -19,6 +19,7 @@ class ErrorCodes {
   static const ErrorCode VERIFICATION_EMAIL_SENT_RECENTLY = ErrorCode("A verification email was already sent recently. Check your inbox.");
   static const ErrorCode TIMEOUT = ErrorCode("Request timed out. Check your connnection and try again later.");
   static const ErrorCode REQUIRES_RECENT_LOGIN = ErrorCode("This requires recent login. Please logout and login again.");
+  static const ErrorCode RECENT_SUGGESTION = ErrorCode("You have already made a suggestion in the past hour.");
 }
 
 const String PRIVACY_POLICY = """Hello

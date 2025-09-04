@@ -41,7 +41,8 @@ class _SignupPageState extends State<SignupPage>{
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(userCredential.user!.email);
     Map<String, dynamic> userDocData = {
       "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
-      "last_password_reset_email": DateTime(2000)
+      "last_password_reset_email": DateTime(2000),
+      "last_quote_suggestion": DateTime(2000)
     };
     await userDocRef.get().then((DocumentSnapshot docSnapshot) async {
       await userDocRef.set(userDocData);
