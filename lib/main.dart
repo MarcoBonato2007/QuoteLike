@@ -95,13 +95,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Next in line
-  // fix the failed to get service from broker error
-
 // Polish
+  // TODO: change all .catchErrors to try excepts, make a unified function in globals for this
+  // fix the failed to get service from broker error
   // make it all look good
   // add more pre internet checks (add in global, make an internetCheck() function or smth)
-  // make all async functions work through await (to avoid issues like a stuck loading icon)
+  // ensure all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack
   // use .timeout() on firestore uses to ensure it doesn't take too long

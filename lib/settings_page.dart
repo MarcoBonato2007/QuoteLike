@@ -90,9 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
-              BackButton( // back button
-                onPressed: () => Navigator.of(context).pop()  
-              ),
+              BackButton(),
               elevatedButton( // add back button
                 context, 
                 "Log out", 
@@ -120,9 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
-              BackButton( // back button
-                onPressed: () => Navigator.of(context).pop()  
-              ),
+              BackButton(),
               elevatedButton( // add back button
                 context, 
                 "Delete account", 
@@ -155,9 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             actionsAlignment: MainAxisAlignment.start,
             actions: [
-              BackButton( // back button
-                onPressed: () => Navigator.of(context).pop()  
-              )
+              BackButton()
             ]
           )
         )),

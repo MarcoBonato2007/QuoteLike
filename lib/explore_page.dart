@@ -14,6 +14,7 @@ import 'package:quotebook/constants.dart';
 import 'package:quotebook/dropdown.dart';
 import 'package:quotebook/globals.dart';
 import 'package:quotebook/quote_card.dart';
+import 'package:quotebook/quote_creation_page.dart';
 
 class ExplorePage extends StatefulWidget {
   final List<String> likedQuotes;
@@ -135,13 +136,32 @@ class _ExplorePageState extends State<ExplorePage> {
         title: Text("Explore"),
         centerTitle: true,
       ),
-      floatingActionButton: FloatingActionButton(
-        elevation: 2,
-        backgroundColor: ColorScheme.of(context).primary,
-        foregroundColor: ColorScheme.of(context).surface,
-        child: Icon(Icons.refresh),
-        onPressed: () => throttledFunc(1000, () => pagingController.refresh())
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 25),
+            child: FloatingActionButton( // button to suggest a quote
+              elevation: 2,
+              backgroundColor: ColorScheme.of(context).primary,
+              foregroundColor: ColorScheme.of(context).surface,
+              child: Icon(Icons.add),
+              onPressed: () => showDialog(
+                context: context, 
+                builder: (context) => QuoteCreationPage()
+              ),
+            ),
+          ),
+          FloatingActionButton( // button to refresh the scrollable list of quotes
+            elevation: 2,
+            backgroundColor: ColorScheme.of(context).primary,
+            foregroundColor: ColorScheme.of(context).surface,
+            child: Icon(Icons.refresh),
+            onPressed: () => throttledFunc(1000, () => pagingController.refresh())
+          ),
+        ],
       ),
+
       body: Column(
         children: [
           SizedBox(height: 15),

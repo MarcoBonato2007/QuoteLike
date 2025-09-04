@@ -52,7 +52,7 @@ class _MainPageState extends State<MainPage> {
               builder: (context, snapshot) {
                 if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
                   debugPrint("Unknown flutter error getting liked quotes: ${snapshot.error}");
-                  return Text("An unknown error occurred");
+                  return Center(child: Text("An unknown error occurred"));
                 }
                 else if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
