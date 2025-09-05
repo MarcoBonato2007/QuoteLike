@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -44,26 +45,28 @@ class _SignupPageState extends State<SignupPage>{
       "last_password_reset_email": DateTime(2000),
       "last_quote_suggestion": DateTime(2000)
     };
-    await userDocRef.get().then((DocumentSnapshot docSnapshot) async {
-      await userDocRef.set(userDocData);
-      await userDocRef.collection("liked_quotes").doc("placeholder").set({});
-    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await userDocRef.get().then((DocumentSnapshot docSnapshot) async {
+        await userDocRef.set(userDocData);
+        await userDocRef.collection("liked_quotes").doc("placeholder").set({});
+      }).timeout(Duration(seconds: 5));     
     });
     if (error != null) { // we always return the FIRST error encountered
       return error;
     }
 
     // send the user email verification
-    error = await firebaseAuthErrorCatch(() async => await userCredential.user!.sendEmailVerification().timeout(Duration(seconds: 5)));
+    error = await firebaseErrorHandler(log, () async {
+      await userCredential.user!.sendEmailVerification().timeout(Duration(seconds: 5));
+    });
     if (error != null) {
       return error;
     }
 
     userDocData["last_verification_email"] = DateTime.timestamp();
-    await userDocRef.set(userDocData).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
-    });   
+    error = await firebaseErrorHandler(log, () async {
+      await userDocRef.set(userDocData).timeout(Duration(seconds: 5));
+    });
     
     return error;
   }
@@ -73,6 +76,7 @@ class _SignupPageState extends State<SignupPage>{
   /// The user is not made aware if they are signing up an already existing user.
   /// This is to prevent an email enumeration attack.
   Future<void> signup(String email, String password) async {    
+    final log = Logger("Sign up user");
     showLoadingIcon();
 
     // new error messages (can be null)
@@ -82,11 +86,12 @@ class _SignupPageState extends State<SignupPage>{
     // Attempt to signup the user and get the new user's credential (or get errors)
     UserCredential? newUserCredential;
     (newEmailError, newPasswordError) = errorsForFields(
-      await firebaseAuthErrorCatch(() async {
+      await firebaseErrorHandler(log, () async {
         newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password
         ).timeout(Duration(seconds: 5));
+        await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
       }) 
     );
 
@@ -96,7 +101,6 @@ class _SignupPageState extends State<SignupPage>{
     }
     
     // if no errors from user creation or other, show success toast and return to LoginPage()
-    // NOTE: error might be equal to EMAIL_ALREADY_IN_USE, so DO NOT use error == null check below
     if (newEmailError == null && newPasswordError == null && mounted) {
       Navigator.of(context).pop();
       showToast(

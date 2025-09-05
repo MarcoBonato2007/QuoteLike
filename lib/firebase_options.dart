@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'quotebook-c323b.firebasestorage.app',
     measurementId: 'G-7B4TC1GHM6',
   );
+
 }

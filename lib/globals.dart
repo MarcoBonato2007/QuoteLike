@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
@@ -82,27 +83,8 @@ TextButton textButton(BuildContext context, String text, Function() onPressed) {
   );
 }
 
-/// Converts a firestore error into an ErrorCode and logs it with the given logger.
-/// 
-/// Goes in .catchError() after a firestore use. Remember to use .timeout() before.
-ErrorCode firestoreErrorHandler(Logger log, dynamic firestoreError) {
-  late final ErrorCode error;
-
-  if (firestoreError is TimeoutException) {
-    error = ErrorCodes.TIMEOUT;
-  }
-  else {
-    error = ErrorCodes.UNKNOWN_ERROR; 
-  }
-
-  log.severe("${log.name}: ${error.errorText} firestore error: $firestoreError");
-
-  return error;
-}
-
-/// try excepts a firebase auth function, returns an error message (see constants.dart)
-Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
-  final log = Logger("Firebase auth error catch");
+/// try excepts a function using firebase in some way, returns an error message (see constants.dart)
+Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc) async {
   ErrorCode? error;
 
   // first check for internet connection.
@@ -110,9 +92,9 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
     error = ErrorCodes.NETWORK_ERROR;
   }
   try { // next, run the function.
-    await func();
+    await firebaseFunc();
   }
-  on FirebaseAuthException catch (e, stackTrace) { // handle possible errors
+  on FirebaseException catch (e, stackTrace) { // handle possible errors
     if (e.code == "invalid-email" || e.code == "channel-error") { // channel-error means empty input of some kind
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.INVALID_EMAIL;
@@ -139,6 +121,11 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
       error = ErrorCodes.REQUIRES_RECENT_LOGIN;
     }
     else {
+      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
+        error,
+        stackTrace,
+        reason: '${log.name}: Unknown firebase error; ${e.code}',
+      );
       log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.UNKNOWN_ERROR;
     }
@@ -148,6 +135,11 @@ Future<ErrorCode?> firebaseAuthErrorCatch(Function() func) async {
     error = ErrorCodes.TIMEOUT;
   }
   catch (e, stackTrace) { // catch any non-firebase errors
+    await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
+      error,
+      stackTrace,
+      reason: '${log.name}: Unknown flutter error',
+    );
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
     error = ErrorCodes.UNKNOWN_ERROR;
   }

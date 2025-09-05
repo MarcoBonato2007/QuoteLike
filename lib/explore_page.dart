@@ -58,7 +58,6 @@ class _ExplorePageState extends State<ExplorePage> {
   /// Returns any errors along with the list of new quotes
   Future<(ErrorCode?, List<QuoteCard>)> getNextQuotesToScroll() async {
     final log = Logger("Getting quotes to scroll");
-
     ErrorCode? error;
 
     String? filter = filterKey.currentState!.value;
@@ -95,22 +94,22 @@ class _ExplorePageState extends State<ExplorePage> {
   
     query = query.limit(10);
 
-    await query.get().then((QuerySnapshot querySnapshot) {
-      for (DocumentSnapshot doc in querySnapshot.docs) {
-        if (doc.id == "placeholder") {continue;}
-        lastQuoteDoc = doc;
-        queryResults.add(QuoteCard(
-          doc.id, 
-          doc["content"], 
-          doc["author"], 
-          doc["creation"], 
-          doc["likes"],
-          widget.likedQuotes.contains(doc.id)
-        ));
-      }
-    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
-    });
+    error = await firebaseErrorHandler(log, () async =>
+      await query.get().then((QuerySnapshot querySnapshot) {
+        for (DocumentSnapshot doc in querySnapshot.docs) {
+          if (doc.id == "placeholder") {continue;}
+          lastQuoteDoc = doc;
+          queryResults.add(QuoteCard(
+            doc.id, 
+            doc["content"], 
+            doc["author"], 
+            doc["creation"], 
+            doc["likes"],
+            widget.likedQuotes.contains(doc.id)
+          ));
+        }
+      }).timeout(Duration(seconds: 5))     
+    );
 
     return (error, queryResults);
   }
