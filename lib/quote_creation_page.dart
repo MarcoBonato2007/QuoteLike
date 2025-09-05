@@ -29,18 +29,18 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
     DocumentReference userDocRef = FirebaseFirestore.instance
       .collection("users")
       .doc(FirebaseAuth.instance.currentUser!.email);
-    await userDocRef.get().then((DocumentSnapshot userDoc) async {
-      Map<String, dynamic> userDocData = userDoc.data() as Map<String, dynamic>;
-      int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDocData["last_quote_suggestion"].toDate()).inMinutes;
-      if (minutesSinceLastSuggestion >= 60 && mounted) {
-        error = await addSuggestion();
-      }
-      else {
-        error = ErrorCodes.RECENT_SUGGESTION;
-      }
-    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
-    }); // catch any errors (ignored for now)
+    error = await firebaseErrorHandler(log, () async {
+      await userDocRef.get().then((DocumentSnapshot userDoc) async {
+        Map<String, dynamic> userDocData = userDoc.data() as Map<String, dynamic>;
+        int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDocData["last_quote_suggestion"].toDate()).inMinutes;
+        if (minutesSinceLastSuggestion >= 60 && mounted) {
+          error = await addSuggestion();
+        }
+        else {
+          error = ErrorCodes.RECENT_SUGGESTION;
+        }
+      }).timeout(Duration(seconds: 5));      
+    });
 
     return error;
   }
@@ -51,25 +51,25 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
 
     // add the suggestion to the collection
     final collectionRef = FirebaseFirestore.instance.collection("suggestions");
-    await collectionRef.add({
-      "content": contentController.text,
-      "author": authorController.text,
-    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await collectionRef.add({
+        "content": contentController.text,
+        "author": authorController.text,
+      }).timeout(Duration(seconds: 5));      
     });
     if (error != null) { // we always return the first error encountered
       return error;
     }
 
     // set a new timestamp
-    await FirebaseFirestore.instance
-      .collection("users")
-      .doc(FirebaseAuth.instance.currentUser!.email)
-      .update({"last_quote_suggestion": Timestamp.now()})
-      .timeout(Duration(seconds: 5))
-    .catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .update({"last_quote_suggestion": Timestamp.now()})
+      .timeout(Duration(seconds: 5));      
     });
+
 
     return error;
   }

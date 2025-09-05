@@ -16,6 +16,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int currentPageIndex = 0; // 0 means explore, 1 means settings
+  late Future<(ErrorCode?, List<String>)> likedQuotesResult; // we put this here to avoid rebuilding constantly
+
 
   /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
   Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
@@ -24,19 +26,25 @@ class _MainPageState extends State<MainPage> {
     ErrorCode? error;
     List<String> likedQuotes = [];
 
-    await FirebaseFirestore.instance
-      .collection("users")
-      .doc(FirebaseAuth.instance.currentUser!.email)
-      .collection("liked_quotes")
-    .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
-        for (DocumentSnapshot doc in querySnapshot.docs) {
-          likedQuotes.add(doc.id);
-        }
-    }).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .collection("liked_quotes")
+      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
+          for (DocumentSnapshot doc in querySnapshot.docs) {
+            likedQuotes.add(doc.id);
+          }
+      });
     });
 
     return (error, likedQuotes);
+  }
+
+  @override
+  void initState() {
+    likedQuotesResult = getLikedQuotes();
+    super.initState();
   }
 
   @override
@@ -48,7 +56,7 @@ class _MainPageState extends State<MainPage> {
           index: currentPageIndex,
           children: [
             FutureBuilder(
-              future: getLikedQuotes(),
+              future: likedQuotesResult,
               builder: (context, snapshot) {
                 if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
                   debugPrint("Unknown flutter error getting liked quotes: ${snapshot.error}");

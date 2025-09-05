@@ -45,16 +45,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // Remove user entry from firebase
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.email);
-    await userDocRef.delete().timeout(Duration(seconds: 5))
-    .catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await userDocRef.delete().timeout(Duration(seconds: 5));
     });
     
     if (error != null) { // we always return the FIRST error encountered
       return error;
     }
     
-    error = await firebaseAuthErrorCatch(() async {
+    error = await firebaseErrorHandler(log, () async {
       await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
 
@@ -95,8 +94,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 context, 
                 "Log out", 
                 () async {
+                  final log = Logger("Logging out");
                   showLoadingIcon();
-                  ErrorCode? error = await firebaseAuthErrorCatch(() async {
+                  ErrorCode? error = await firebaseErrorHandler(log, () async {
                     await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
                   });
                   hideLoadingIcon();

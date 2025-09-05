@@ -1,5 +1,9 @@
+import 'dart:ui';
+
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +19,14 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  await FirebaseAnalytics.instance.logAppOpen();
+
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError; // report errors
+  PlatformDispatcher.instance.onError = (error, stack) { // report async errors
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
 
   // Setup error logging
   Logger.root.level = Level.ALL;
@@ -26,7 +38,7 @@ void main() async {
   // Get messages of user changes in the debug console
   FirebaseAuth.instance // https://firebase.google.com/docs/auth/flutter/start
     .authStateChanges()
-    .listen((User? user) {
+    .listen((User? user) async {
       if (user == null) {
         debugPrint("Nobody logged in");
       }
@@ -96,28 +108,26 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // TODO: change all .catchErrors to try excepts, make a unified function in globals for this
-  // fix the failed to get service from broker error
   // make it all look good
+  // add .timeout() to the global func, remove from then normal uses
   // add more pre internet checks (add in global, make an internetCheck() function or smth)
+    // isn't it already taken care of through firebase error handler?
   // ensure all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack
-  // use .timeout() on firestore uses to ensure it doesn't take too long
-  // use appcheck to ensure no cracked clients and such
   // make a custom form class for login and signup page
   // try adding firestore functions to take care of corrupted / incomplete docs or collections
     // e.g. ensuring all users have a liked_quotes collection
   // make it so that all functions have a descriptor when you highlight them
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // Don't just .catchError(), actually affect the error messages or show a snackbar, remember to use .timeout() and the stuff in globals
+  // Don't just catch errors, actually affect the error messages or show a snackbar
   // do network checks (while ur in quote)
-  // add splash screen (use the package)
+  // test crashlytics works properly (can you see the crash events?)
+  // test analytics works properly (can you see login/logout events?)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
-  // do internet checks
-  // try adding @override init and @override dispose (dispose controllers, keys, etc.)
+  // try adding @override init and @override dispose if useful (dispose controllers, keys, etc.)
   // find any screen switches, check if you need to use navigatorKey anywhere. NO USE OF CONTEXT ANYWHERE after a screen switch (setState included)
   // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
@@ -125,4 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // research common security issues, ask chatgpt, try to find 
   // check for consistency of things like error handling approaches between files
+  // fix the failed to get service from broker error
+  // add firebase app check
+  // get better logo, remember to run the flutter launcher icons package
   // make it from scratch on a diff firebase project, have only this on github

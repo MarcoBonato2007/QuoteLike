@@ -35,11 +35,10 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
 
     var db = FirebaseFirestore.instance;
     DocumentReference quoteDoc = db.collection("quotes").doc(widget.id);
-    await quoteDoc.update({
-      "likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)
-    })
-    .timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+    error = await firebaseErrorHandler(log, () async {
+      await quoteDoc.update({
+        "likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)
+      }).timeout(Duration(seconds: 5));
     });
     if (error != null) { // we always return the first error encoutnered
       return error;
@@ -50,16 +49,17 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
       .doc(FirebaseAuth.instance.currentUser!.email)
       .collection("liked_quotes")
     .doc(widget.id);
-    await userLikedQuoteDoc.get().then((DocumentSnapshot docSnapshot) async {
-      if (docSnapshot.exists && !userLikedQuote) {
-        await userLikedQuoteDoc.delete();
-      }
-      else if (userLikedQuote) {
-        Map<String, dynamic> newData = {};
-        await userLikedQuoteDoc.set(newData);
-      }
-    }).timeout(Duration(seconds: 5)).catchError((firestoreError) {
-      error = firestoreErrorHandler(log, firestoreError);
+
+    error = await firebaseErrorHandler(log, () async {
+      await userLikedQuoteDoc.get().then((DocumentSnapshot docSnapshot) async {
+        if (docSnapshot.exists && !userLikedQuote) {
+          await userLikedQuoteDoc.delete();
+        }
+        else if (userLikedQuote) {
+          Map<String, dynamic> newData = {};
+          await userLikedQuoteDoc.set(newData);
+        }
+      }).timeout(Duration(seconds: 5));     
     });
 
     return error;
