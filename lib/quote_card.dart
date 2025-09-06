@@ -30,36 +30,30 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
 
   /// Likes the quote if already liked, or removes the like if not
   Future<ErrorCode?> likeQuote() async {
-    final log = Logger("Adding/removing likes");
-    ErrorCode? error;
+    final log = Logger("likeQuote() in quote_card.dart");
 
-    var db = FirebaseFirestore.instance;
-    DocumentReference quoteDoc = db.collection("quotes").doc(widget.id);
-    error = await firebaseErrorHandler(log, () async {
-      await quoteDoc.update({
-        "likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)
-      }).timeout(Duration(seconds: 5));
-    });
-    if (error != null) { // we always return the first error encoutnered
-      return error;
-    }
-
-    DocumentReference userLikedQuoteDoc = db // this doc exists if the user liked this quote
+    DocumentReference quoteDocRef = FirebaseFirestore.instance.collection("quotes").doc(widget.id);
+    DocumentReference likeDocRef = FirebaseFirestore.instance // this doc exists if the user liked this quote
       .collection("users")
       .doc(FirebaseAuth.instance.currentUser!.email)
       .collection("liked_quotes")
     .doc(widget.id);
 
-    error = await firebaseErrorHandler(log, () async {
-      await userLikedQuoteDoc.get().then((DocumentSnapshot docSnapshot) async {
-        if (docSnapshot.exists && !userLikedQuote) {
-          await userLikedQuoteDoc.delete();
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
+        final likeDocSnapshot = await transaction.get(likeDocRef);
+        transaction.update( // update the likes on the quote doc
+          quoteDocRef, 
+          {"likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)}
+        );
+        if (likeDocSnapshot.exists) { // create/delete the liked quote doc
+          transaction.delete(likeDocRef);
         }
-        else if (userLikedQuote) {
-          Map<String, dynamic> newData = {};
-          await userLikedQuoteDoc.set(newData);
+        else {
+          Map<String, dynamic> newData = {}; // needed to prevent a dumb firestore error
+          transaction.set(likeDocRef, newData);
         }
-      }).timeout(Duration(seconds: 5));     
+      }).timeout(Duration(seconds: 5));
     });
 
     return error;
@@ -131,7 +125,6 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
         ),
       ),
     );
-
     SizedBox quoteBox = SizedBox(
       width: 300,
       child: Column(

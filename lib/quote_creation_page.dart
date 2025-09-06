@@ -20,61 +20,41 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
   late Field contentField;
   late Field authorField;
 
-  Future<ErrorCode?> attemptSuggestion() async {
-    final log = Logger("Attempt to make suggestion");
+  Future<ErrorCode?> addSuggestion() async {
+    final log = Logger("addSuggestion() in quote_creation_page.dart");
     ErrorCode? error;
 
     DocumentReference userDocRef = FirebaseFirestore.instance
       .collection("users")
       .doc(FirebaseAuth.instance.currentUser!.email);
-    bool tooRecent = true;
-    error = await firebaseErrorHandler(log, () async {
-      await userDocRef.get().then((DocumentSnapshot userDoc) async {
-        int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDoc["last_quote_suggestion"].toDate()).inMinutes;
-        if (minutesSinceLastSuggestion >= 60 && mounted) {
-          tooRecent = false;
+    DocumentReference suggestionDocRef = FirebaseFirestore.instance
+      .collection("suggestions")
+      .doc();
+
+    // using afterError instead of error = allows us to set error inside the firebaseErrorHandler()
+    ErrorCode? afterError = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
+        final userDocSnapshot = await transaction.get(userDocRef);
+        int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDocSnapshot["last_quote_suggestion"].toDate()).inMinutes;
+        if (minutesSinceLastSuggestion >= 60) {
+          transaction.set(
+            suggestionDocRef, 
+            {
+              "content": quoteCreationFormKey.currentState!.text(contentField.id),
+              "author": quoteCreationFormKey.currentState!.text(authorField.id),
+            }
+          );
+          transaction.update(
+            userDocRef, 
+            {"last_quote_suggestion": Timestamp.now()}
+          );
         }
-      }).timeout(Duration(seconds: 5));      
+        else {
+          error = ErrorCodes.RECENT_SUGGESTION;
+        }
+      }).timeout(Duration(seconds: 5));  
     });
-    if (error != null) { // we always return the first error encoutnered
-      return error;
-    }
-
-    if (tooRecent) {
-      return ErrorCodes.RECENT_SUGGESTION;
-    }
-    else {
-      error = await addSuggestion();
-    }
-
-    return error;
-  }
-
-  Future<ErrorCode?> addSuggestion() async {
-    final log = Logger("Adding a quote suggestion");
-    ErrorCode? error;
-
-    // add the suggestion to the collection
-    final collectionRef = FirebaseFirestore.instance.collection("suggestions");
-    error = await firebaseErrorHandler(log, () async {
-      await collectionRef.add({
-        "content": quoteCreationFormKey.currentState!.text(contentField.id),
-        "author": quoteCreationFormKey.currentState!.text(authorField.id),
-      }).timeout(Duration(seconds: 5));      
-    });
-    if (error != null) { // we always return the first error encountered
-      return error;
-    }
-
-    // set a new timestamp
-    error = await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance
-        .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.email)
-        .update({"last_quote_suggestion": Timestamp.now()})
-      .timeout(Duration(seconds: 5));      
-    });
-
+    error ??= afterError;
 
     return error;
   }
@@ -127,7 +107,7 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
           () async {
             if (quoteCreationFormKey.currentState!.validateAll()) {
               showLoadingIcon();
-              ErrorCode? error = await attemptSuggestion();
+              ErrorCode? error = await addSuggestion();
               if (context.mounted) {
                 Navigator.of(context).pop(); // remove the suggestion dialog
               }

@@ -38,6 +38,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     await firebaseFunc();
   }
   on FirebaseException catch (e, stackTrace) { // handle possible errors
+
     if (e.code == "invalid-email" || e.code == "channel-error") { // channel-error means empty input of some kind
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.INVALID_EMAIL;
@@ -64,13 +65,13 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       error = ErrorCodes.REQUIRES_RECENT_LOGIN;
     }
     else {
+      log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
+      error = ErrorCodes.UNKNOWN_ERROR;
       await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
         error,
         stackTrace,
         reason: '${log.name}: Unknown firebase error; ${e.code}',
       );
-      log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.UNKNOWN_ERROR;
     }
   }
   on TimeoutException catch (e, stackTrace) {
@@ -78,19 +79,21 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     error = ErrorCodes.TIMEOUT;
   }
   catch (e, stackTrace) { // catch any non-firebase errors
+    log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
+    error = ErrorCodes.UNKNOWN_ERROR;
     await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
       error,
       stackTrace,
       reason: '${log.name}: Unknown flutter error',
     );
-    log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
-    error = ErrorCodes.UNKNOWN_ERROR;
   }
 
   return error;
 }
 
 /// convert an error from firebaseErrorHandler() into errors for an email and password field
+/// 
+/// Email already in use is is ignored to prevent an enumeration attack
 (ErrorCode?, ErrorCode?) errorsForFields(ErrorCode? error) {
   ErrorCode? emailError, passwordError;
   

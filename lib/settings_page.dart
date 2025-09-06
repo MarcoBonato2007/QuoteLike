@@ -23,20 +23,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<ErrorCode?> deleteUser(BuildContext context) async {
     showLoadingIcon();
 
-    final log = Logger("Deleting account");
-
-    ErrorCode? error;
+    final log = Logger("deleteUser() in settings_page.dart");
 
     // Remove user entry from firebase
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.email);
-    error = await firebaseErrorHandler(log, () async {
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
       await userDocRef.delete().timeout(Duration(seconds: 5));
     });
-    if (error != null) { // we always return the FIRST error encountered
-      return error;
-    }
-    
-    error = await firebaseErrorHandler(log, () async {
+    error ??= await firebaseErrorHandler(log, () async {
       // This also signs out the user
       await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
@@ -77,7 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
               StandardElevatedButton( // add back button
                 "Log out", 
                 () async {
-                  final log = Logger("Logging out");
+                  final log = Logger("Log out button in settings_page.dart");
                   showLoadingIcon();
                   ErrorCode? error = await firebaseErrorHandler(log, doNetworkCheck: false, () async {
                     await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
@@ -108,7 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ErrorCode? error = await deleteUser(context);
                   if (error != null) {
                     showToast(
-                      navigatorKey.currentContext!, 
+                      navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
                       ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
                       Duration(seconds: 5)
                     );
