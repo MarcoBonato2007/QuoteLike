@@ -42,9 +42,7 @@ class _LoginPageState extends State<LoginPage>{
   /// Attempts to send user a password reset email, shows any relevant errors.
   /// 
   /// Some errors are not shown, to prevent an email enumeration attack.
-  Future<ErrorCode?> forgotPassword(String email) async {
-    final log = Logger("forgotPassword() in login_page.dart");
-
+  Future<ErrorCode?> forgotPassword(Logger log, String email) async {
     ErrorCode? error;
     
     // we check if the account exists and if a password reset wasn't already sent recently
@@ -103,6 +101,8 @@ class _LoginPageState extends State<LoginPage>{
   /// If user successfully logs in but is not verified, then a verification email is sent
   /// if another wasn't sent too recently.
   Future<void> login(String email, String password) async {
+    // no fixedTimeFunc is needed since login takes same amount of time for incorrect vs correct emails
+
     final log = Logger("login() in login_page.dart");
     showLoadingIcon();
 
@@ -176,7 +176,12 @@ class _LoginPageState extends State<LoginPage>{
           loginFormKey.currentState!.removeErrors();
           if (loginFormKey.currentState!.validate(emailField.id)) {
             showLoadingIcon();
-            ErrorCode? error = await forgotPassword(loginFormKey.currentState!.text(emailField.id));
+            
+            final log = Logger("forgotPassword() in login_page.dart");
+            ErrorCode? error = await fixedTimeFunc(
+              log, 
+              () async => await forgotPassword(log, loginFormKey.currentState!.text(emailField.id))
+            );
 
             // if no errors occurred, show success toast
             if (error == null && context.mounted) {
