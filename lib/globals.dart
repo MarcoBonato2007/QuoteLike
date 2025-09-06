@@ -74,10 +74,6 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       );
     }
   }
-  on TimeoutException catch (e, stackTrace) {
-    log.info("${log.name}: Firebase timeout caught error.", e, stackTrace);
-    error = ErrorCodes.TIMEOUT;
-  }
   catch (e, stackTrace) { // catch any non-firebase errors
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
     error = ErrorCodes.UNKNOWN_ERROR;
@@ -115,6 +111,31 @@ void throttledFunc(int throttleTimeMs, Function() func) async {
     await func();
     lastAction = DateTime.timestamp();
   }
+}
+
+/// Executes a function that takes at least the duration to execute every time, even if it finishes early.
+/// 
+/// This is usually used to prevent an email enumeration attack (in signup and forgot password)
+Future<ErrorCode?> fixedTimeFunc(Logger log, Future<ErrorCode?> Function() func) async {
+  final stopwatch = Stopwatch();
+  ErrorCode? error;
+  stopwatch.start();
+
+  try {
+    error = await func().timeout(Duration(seconds: 5));
+  }
+  on TimeoutException catch (e, stackTrace) {
+    log.info("${log.name}: Firebase timeout caught error.", e, stackTrace);
+    error = ErrorCodes.TIMEOUT;
+  }
+
+  stopwatch.stop();
+  final stopwatchDuration = Duration(milliseconds: stopwatch.elapsedMilliseconds);
+  if (stopwatchDuration.compareTo(Duration(seconds: 5)) < 0) {
+    await Future.delayed(Duration(seconds: 5) - stopwatchDuration);
+  }
+
+  return error;
 }
 
 /// Shows a popup message on the bottom of the screen

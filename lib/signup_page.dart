@@ -40,7 +40,7 @@ class _SignupPageState extends State<SignupPage>{
         transaction.set(userDocRef, userDocData);
         Map<String, dynamic> newData = {}; // this is used to prevent a dumb firebase error 
         transaction.set(placeholderDocRef, newData);
-      }).timeout(Duration(seconds: 5));  
+      });  
     });
     
     return error;
@@ -50,54 +50,26 @@ class _SignupPageState extends State<SignupPage>{
   /// 
   /// The user is not made aware if they are signing up an already existing user.
   /// This is to prevent an email enumeration attack.
-  Future<void> signup(String email, String password) async {
-    final log = Logger("signup() in signup_page.dart");
-    showLoadingIcon();
-
-    ErrorCode? newEmailError;
-    ErrorCode? newPasswordError;
-
+  Future<ErrorCode?> signup(Logger log, String email, String password) async {
     // Attempt to signup the user and get the new user's credential (or get errors)
     UserCredential? newUserCredential;
     ErrorCode? error = await firebaseErrorHandler(log, () async {
       newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password
-      ).timeout(Duration(seconds: 5));
+      );
     });
 
     // log the event in analytics
     // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
     await firebaseErrorHandler(log, () async {
-      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
+      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password");
     });
 
     // If a new user has been created successfully, then create their doc in the database
-    if (newUserCredential != null) { // you could also use if (error == null)
-      error = await createUserDoc(newUserCredential!.user!.email!);
-    }
-    
-    // if no errors from user creation, show success toast and return to LoginPage()
-    // do NOT use error == null, because error could be ErrorCodes.EMAIL_ALREADY_IN_USE
-    // errorsForFields ignores this in order to prevent an email enumeration attack
-    (newEmailError, newPasswordError) = errorsForFields(error);
-    if (newEmailError == null && newPasswordError == null && mounted) {
-      Navigator.of(context).pop(); // return to login page
-      showToast(
-        context,
-        "Sign up successful or account already exists.", 
-        Duration(seconds: 3),
-      );        
-    }
+    error ??= await createUserDoc(newUserCredential!.user!.email!);
 
-    // set error messages
-    signupFormKey.currentState!.setError(emailField.id, newEmailError);
-    signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
-    if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-      signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
-    }
-
-    hideLoadingIcon();
+    return error;
   }
 
   @override
@@ -166,10 +138,37 @@ class _SignupPageState extends State<SignupPage>{
       "Sign up",
       () => throttledFunc(2000, () async {
         if (signupFormKey.currentState!.validateAll()) {
-          await signup(
-            signupFormKey.currentState!.text(emailField.id), 
-            signupFormKey.currentState!.text(passwordField.id), 
-          );
+          showLoadingIcon();
+          ErrorCode? newEmailError;
+          ErrorCode? newPasswordError;
+
+          final log = Logger("signup() in signup_page.dart");
+          ErrorCode? error = await fixedTimeFunc(log, () async {
+            return await signup(
+              log,
+              signupFormKey.currentState!.text(emailField.id), 
+              signupFormKey.currentState!.text(passwordField.id), 
+            );
+          });
+
+          (newEmailError, newPasswordError) = errorsForFields(error);
+          if (newEmailError == null && newPasswordError == null && context.mounted) {
+            Navigator.of(context).pop(); // return to login page
+            showToast(
+              context,
+              "Sign up successful or account already exists.", 
+              Duration(seconds: 3),
+            );        
+          }
+
+          // set error messages
+          signupFormKey.currentState!.setError(emailField.id, newEmailError);
+          signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
+          if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
+            signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
+          }
+
+          hideLoadingIcon();
         }      
       }),
     );

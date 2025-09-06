@@ -108,44 +108,38 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // TODO: go through line by line. Think what you can improve more.
-
-  // add folders and categorize the files
-  // add triple slash comments to everything important
+  // TODO: go through line by line, each file
+    // Is it repeated?
+    // Think carefully about each possibility. What will happen? Any paths that will lead to errors?
+    // Is there good whitespace?
+    // Can I replace it with something more standard?
+    // add comments
 
   // allow reload with no wifi (split explore page scrollable part into separate section)
 
   // think how to fix data integrity issues when combining auth and firestore. Do they need fixing?
     // Think of possible issues that could arise (e.g. non-existing user doc, non-existing user in auth, etc.)
 
-  // consider swapping to .then().catchError() (think about afterError and how that's used)
+  // add folders and categorize the files
+  // add triple slash comments to EVERY function, class, important variable
+
   // fix not seeing sign up events in analytics
-  // ensure all async functions work through await (to avoid issues like a stuck loading icon)
+
   // ensure safety of api keys and such. Check nothing sensitive on github.
-  // Minimize the loading times for things like signup() and login() to prevent enumeration attack
-    // Or maybe do something like using async functions with await and do them in background
-  // make a custom form class for login and signup page
-  // try adding firestore functions to take care of corrupted / incomplete docs or collections
-    // e.g. ensuring all users have a liked_quotes collection
-  // make it so that all functions have a descriptor when you highlight them
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // Don't just catch errors, actually affect the error messages or show a snackbar
-  // do network checks (while ur in quote)
+  // test losing network connection at random times, how does the program react?
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
   // add more comments
-  // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
-  // look at earlier made files for style guides (e.g. login page or globals)
+  // check style and code consistency
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // research common security issues, ask chatgpt, try to find 
-  // check for consistency of things like error handling approaches between files
   // fix the failed to get service from broker error
   // add firebase app check
   // add the right github license (GNU GPLv3)
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
   // get better logo, remember to run the flutter launcher icons package
   // make it from scratch on a diff firebase project, have only this on github
-
-  // see if u can add cloud functions by linking firestore to an acc with no money inside
+  // see if u can add cloud functions (if useful) by linking firestore to an acc with no money inside
