@@ -108,8 +108,22 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
+  // cut down on login page lines
+  // change logger names for the function name and file
+
+  // consider removing uses of load icon, set error, etc. in error functions
+  // add folders and categorize the files
+  // add triple slash comments to everything important
+
+  // check the program against different aspect ratios
+  // check what normal keys are for (not global key, the normal ones)
+  // add const where possible
+  // modularize, check if you setState big widgets (avoid that!)
+  // use futurebuilder where necessary
+  // use mediaquery and layotbuilder where possbiles
+  // check where you can add animations / feedback
+
   // make it all look good
-  // add .timeout() to the global func, remove from then normal uses
   // add more pre internet checks (add in global, make an internetCheck() function or smth)
     // isn't it already taken care of through firebase error handler?
   // ensure all async functions work through await (to avoid issues like a stuck loading icon)
@@ -127,7 +141,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // test analytics works properly (can you see login/logout events?)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
-  // try adding @override init and @override dispose if useful (dispose controllers, keys, etc.)
+  // add more comments
+  // add triple slash comments to all classes and functions
   // find any screen switches, check if you need to use navigatorKey anywhere. NO USE OF CONTEXT ANYWHERE after a screen switch (setState included)
   // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
@@ -137,5 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // check for consistency of things like error handling approaches between files
   // fix the failed to get service from broker error
   // add firebase app check
+  // add the right github license (GNU GPLv3)
+  // Just generally re-read through all the code. What can you improve? what can you not repeat?
   // get better logo, remember to run the flutter launcher icons package
   // make it from scratch on a diff firebase project, have only this on github

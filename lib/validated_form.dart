@@ -1,0 +1,160 @@
+import 'package:email_validator/email_validator.dart';
+import 'package:flutter/material.dart';
+import 'package:quotebook/constants.dart';
+
+/// This is the standard email validator used by email fields
+String? emailValidator(String? inputtedValue) {
+  if (inputtedValue == "" || inputtedValue == null) {
+    return "Please enter an email";
+  }
+  if (!EmailValidator.validate(inputtedValue)) {
+    return "Invalid email format";
+  }
+  else {
+    return null;
+  }
+}
+
+/// The user uses this to input the properties of the forms they want to create.
+/// 
+/// The id doubles as the hint text. 
+/// Note that this means no two widgets can have the same hint text.
+class Field {
+  final String id;
+  final Icon prefixIcon;
+  final bool obscure;
+  final String? Function(String? inputtedValue) validator;
+  final Widget? counter;
+
+  const Field(
+    this.id,
+    this.prefixIcon,
+    this.obscure,
+    this.validator,
+    {
+      this.counter,
+    }
+  );
+}
+
+/// The standard field for an email
+class EmailField extends Field {
+  EmailField() : super(
+    "Email",
+    Icon(Icons.email),
+    false,
+    emailValidator,  
+  );
+}
+
+/// All of the validated forms in the program have numerous things in common, 
+/// so it's best to make a separate class to avoid repetiion.
+class ValidatedForm extends StatefulWidget {
+  final List<Field> fields;
+  const ValidatedForm(this.fields, {super.key});
+
+  @override
+  State<ValidatedForm> createState() => ValidatedFormState();
+}
+
+class ValidatedFormState extends State<ValidatedForm> {
+  // All of these map the id of a field to some property about them
+  Map<String, TextEditingController> controllers = {};
+  Map<String, GlobalKey<FormFieldState>> keys = {};
+  Map<String, ErrorCode?> fieldErrors = {};
+  Map<String, bool> obscurity = {};
+
+  @override
+  void initState() {
+    // Initialize the 4 variables above by iterating over the fields
+    for (Field field in widget.fields) {
+      controllers[field.id] = TextEditingController();
+      keys[field.id] = GlobalKey<FormFieldState>();
+      fieldErrors[field.id] = null;
+      obscurity[field.id] = field.obscure;
+    }
+
+    super.initState();
+  }
+
+  void setError(String fieldId, ErrorCode? newError) => setState(() {
+    fieldErrors[fieldId] = newError;
+  });
+
+  void setObscurity(String fieldId, bool newObscurity) => setState(() {
+    obscurity[fieldId] = newObscurity;
+  });
+
+  void removeErrors() => setState(() {
+    for (Field field in widget.fields) {
+      fieldErrors[field.id] = null;
+    }
+  });
+
+  /// Retrieve the text within the specified form
+  String text(String fieldId) => controllers[fieldId]!.text;
+
+  /// Return whether the input given to the specified form is valid
+  /// 
+  /// The given field displays a red error message if not
+  bool validate(String fieldId) => keys[fieldId]!.currentState!.validate();
+
+  /// Return whether all fields have valid input
+  /// 
+  /// Fields without valid input show a red error message
+  bool validateAll() {
+    bool allValid = true;
+    for (Field field in widget.fields) {
+      bool fieldValid = validate(field.id);
+      allValid = allValid && fieldValid;
+    }
+    return allValid;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (Field field in widget.fields) 
+          Column(
+            children: [
+              TextFormField(
+                controller: controllers[field.id]!,
+                key: keys[field.id],
+                onChanged: (String? inputtedValue) => removeErrors(),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: field.validator,
+                obscureText: obscurity[field.id]!,
+                decoration: InputDecoration(
+                  helperText: "",
+                  errorMaxLines: 3,
+                  border: OutlineInputBorder(),
+                  hintText: field.id,
+                  errorText: fieldErrors[field.id]?.errorText,
+                  prefixIcon: field.prefixIcon,
+                  counter: field.counter,
+                  suffixIcon: field.obscure ?
+                    Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: IconButton.outlined(
+                        color: ColorScheme.of(context).primary,
+                        icon: obscurity[field.id]! ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
+                        onPressed: () => setState(() => obscurity[field.id] = !obscurity[field.id]!),
+                        style: IconButton.styleFrom(
+                          side: BorderSide(
+                            width: 2.0, 
+                            color: ColorScheme.of(context).primary,
+                          ), 
+                        ),
+                      ),
+                    )
+                  : null
+                ),
+              ),
+              SizedBox(height: 5) // spacing between fields
+            ]
+          ),
+      ] 
+    );
+  }
+}

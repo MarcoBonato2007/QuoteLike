@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/standard_widgets.dart';
+import 'package:quotebook/validated_form.dart';
 
 class QuoteCreationPage extends StatefulWidget {
   const QuoteCreationPage({super.key});
@@ -14,13 +16,9 @@ class QuoteCreationPage extends StatefulWidget {
 }
 
 class _QuoteCreationPageState extends State<QuoteCreationPage> {
-  final contentController = TextEditingController();
-  final contentKey = GlobalKey<FormFieldState>();
-  ErrorCode? contentError;
-
-  final authorController = TextEditingController();
-  final authorKey = GlobalKey<FormFieldState>();
-  ErrorCode? authorError;
+  final quoteCreationFormKey = GlobalKey<ValidatedFormState>();
+  late Field contentField;
+  late Field authorField;
 
   Future<ErrorCode?> attemptSuggestion() async {
     final log = Logger("Attempt to make suggestion");
@@ -29,18 +27,25 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
     DocumentReference userDocRef = FirebaseFirestore.instance
       .collection("users")
       .doc(FirebaseAuth.instance.currentUser!.email);
+    bool tooRecent = true;
     error = await firebaseErrorHandler(log, () async {
       await userDocRef.get().then((DocumentSnapshot userDoc) async {
-        Map<String, dynamic> userDocData = userDoc.data() as Map<String, dynamic>;
-        int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDocData["last_quote_suggestion"].toDate()).inMinutes;
+        int minutesSinceLastSuggestion = DateTime.timestamp().difference(userDoc["last_quote_suggestion"].toDate()).inMinutes;
         if (minutesSinceLastSuggestion >= 60 && mounted) {
-          error = await addSuggestion();
-        }
-        else {
-          error = ErrorCodes.RECENT_SUGGESTION;
+          tooRecent = false;
         }
       }).timeout(Duration(seconds: 5));      
     });
+    if (error != null) { // we always return the first error encoutnered
+      return error;
+    }
+
+    if (tooRecent) {
+      return ErrorCodes.RECENT_SUGGESTION;
+    }
+    else {
+      error = await addSuggestion();
+    }
 
     return error;
   }
@@ -53,8 +58,8 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
     final collectionRef = FirebaseFirestore.instance.collection("suggestions");
     error = await firebaseErrorHandler(log, () async {
       await collectionRef.add({
-        "content": contentController.text,
-        "author": authorController.text,
+        "content": quoteCreationFormKey.currentState!.text(contentField.id),
+        "author": quoteCreationFormKey.currentState!.text(authorField.id),
       }).timeout(Duration(seconds: 5));      
     });
     if (error != null) { // we always return the first error encountered
@@ -76,18 +81,51 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
 
   @override
   Widget build(BuildContext context) {
+    contentField = Field(
+      "Quote content",
+      Icon(Icons.format_quote),
+      false,
+      (String? currentValue) {
+        if (currentValue == null || currentValue == "") {
+          return "Please enter quote content";
+        }
+        else {
+          return null;
+        }
+      }  
+    );
+
+    authorField = Field(
+      "Author",
+      Icon(Icons.person),
+      false,
+      (String? currentValue) {
+        if (currentValue == null || currentValue == "") {
+          return "Please enter an author";
+        }
+        else {
+          return null;
+        }
+      }   
+    );
+
+    final quoteCreationForm = ValidatedForm(
+      key: quoteCreationFormKey,
+      [
+        contentField,
+        authorField
+      ]
+    );
+
     return AlertDialog(
       title: Text("Suggest a quote"),
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
         BackButton(),
-        elevatedButton(
-          context,
+        StandardElevatedButton(
           "Suggest quote",
           () async {
-            authorKey.currentState!.validate();
-            contentKey.currentState!.validate();
-            if (authorKey.currentState!.validate() && contentKey.currentState!.validate()) {
+            if (quoteCreationFormKey.currentState!.validateAll()) {
               showLoadingIcon();
               ErrorCode? error = await attemptSuggestion();
               if (context.mounted) {
@@ -109,46 +147,10 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
         children: [
           SizedBox(
             width: MediaQuery.of(context).size.width,
-            child: textFormField(
-              contentController,
-              contentKey,
-              "Quote content",
-              contentError,
-              Icon(Icons.format_quote),
-              (String? currentValue) => setState(() {
-                contentError = null; 
-                authorError = null;
-              }),
-              (String? currentValue) {
-                if (currentValue == null || currentValue == "") {
-                  return "Please enter quote content";
-                }
-                else {
-                  return null;
-                }
-              }
-            ),
+            child: quoteCreationForm
           ),
           SizedBox(height: 5),
-          textFormField(
-            authorController,
-            authorKey,
-            "Author",
-            authorError,
-            Icon(Icons.person),
-            (String? currentValue) => setState(() {
-              contentError = null; 
-              authorError = null;
-            }),
-            (String? currentValue) {
-              if (currentValue == null || currentValue == "") {
-                return "Please enter an author";
-              }
-              else {
-                return null;
-              }
-            }
-          ),
+
         ]
       ),
     );

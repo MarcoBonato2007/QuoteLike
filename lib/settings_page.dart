@@ -6,26 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/standard_widgets.dart';
 import 'package:quotebook/theme_settings.dart';
-
-/// Standardizes the style for a settings button used in the settings page
-///
-/// Used by login and signup pages aswell for the swap color theme button
-Widget settingsButton(String text, Icon icon, Function() onPressed) {
-  ElevatedButton mainButton = ElevatedButton.icon(
-    label: Text(text),
-    icon: icon,
-    style: ElevatedButton.styleFrom(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10)) 
-    ),
-    onPressed: onPressed
-  );
-
-  return Row(children: [Expanded(child: mainButton)]);
-}
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -48,12 +32,12 @@ class _SettingsPageState extends State<SettingsPage> {
     error = await firebaseErrorHandler(log, () async {
       await userDocRef.delete().timeout(Duration(seconds: 5));
     });
-    
     if (error != null) { // we always return the FIRST error encountered
       return error;
     }
     
     error = await firebaseErrorHandler(log, () async {
+      // This also signs out the user
       await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
 
@@ -80,7 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
           )
         ),
         SizedBox(height: 5),
-        settingsButton("Log out", Icon(Icons.logout), () => showDialog( // show confirmation dialog
+        StandardSettingsButton("Log out", Icon(Icons.logout), () => showDialog( // show confirmation dialog
           context: context,
           builder: (BuildContext context) => AlertDialog(
             content: Text(
@@ -90,13 +74,12 @@ class _SettingsPageState extends State<SettingsPage> {
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
               BackButton(),
-              elevatedButton( // add back button
-                context, 
+              StandardElevatedButton( // add back button
                 "Log out", 
                 () async {
                   final log = Logger("Logging out");
                   showLoadingIcon();
-                  ErrorCode? error = await firebaseErrorHandler(log, () async {
+                  ErrorCode? error = await firebaseErrorHandler(log, doNetworkCheck: false, () async {
                     await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
                   });
                   hideLoadingIcon();
@@ -109,7 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ]
           )
         )),
-        settingsButton("Delete account", Icon(Icons.delete), () => showDialog( // show confirmation dialog
+        StandardSettingsButton("Delete account", Icon(Icons.delete), () => showDialog( // show confirmation dialog
           context: context,
           builder: (BuildContext context) => AlertDialog(
             content: Text(
@@ -119,8 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
               BackButton(),
-              elevatedButton( // add back button
-                context, 
+              StandardElevatedButton( // add back button
                 "Delete account", 
                 () async {
                   ErrorCode? error = await deleteUser(context);
@@ -136,7 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ]
           )
         )),
-        settingsButton("Privacy policy", Icon(Icons.privacy_tip), () => showDialog(
+        StandardSettingsButton("Privacy policy", Icon(Icons.privacy_tip), () => showDialog(
           context: context,
           builder: (BuildContext context) => AlertDialog(
             content: Scrollbar(
@@ -155,16 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ]
           )
         )),
-        settingsButton(
-          "Swap color theme", 
-          Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
-          () async {
-            showLoadingIcon();
-            await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
-            setState(() {});
-            hideLoadingIcon();
-          }
-        ),
+        SwapThemeButton()
       ]
     );
   }

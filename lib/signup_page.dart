@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:email_validator/email_validator.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
-import 'package:quotebook/settings_page.dart';
+import 'package:quotebook/standard_widgets.dart';
 import 'package:quotebook/theme_settings.dart';
+import 'package:quotebook/validated_form.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -18,24 +17,14 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage>{
-  ErrorCode? emailError; // put here so login() and build() can both access them\
-  final emailFieldController = TextEditingController();
-  final emailFieldKey = GlobalKey<FormFieldState>();
-
-  ErrorCode? passwordError;
-  final passwordFieldKey = GlobalKey<FormFieldState>();
-  final passwordFieldController = TextEditingController();
-  bool obscurePassword = true;
-
-  ErrorCode? passwordConfirmError;
-  final passwordConfirmFieldKey = GlobalKey<FormFieldState>();
-  final passwordConfirmFieldController = TextEditingController();
-  bool obscurePasswordConfirm = true;
+  final signupFormKey = GlobalKey<ValidatedFormState>();
+  Field emailField = EmailField();
+  late Field passwordField;
+  late Field passwordConfirmField;
 
   /// Creates a new doc for a new user in the firestore database (users collection), returns an ErrorCode?
   Future<ErrorCode?> createUserDoc(UserCredential userCredential) async {
     final log = Logger("Creating new user doc");
-
     ErrorCode? error; // contains errors occurred when creating the user doc
 
     // Create a new user doc in the firestore database
@@ -51,22 +40,6 @@ class _SignupPageState extends State<SignupPage>{
         await userDocRef.collection("liked_quotes").doc("placeholder").set({});
       }).timeout(Duration(seconds: 5));     
     });
-    if (error != null) { // we always return the FIRST error encountered
-      return error;
-    }
-
-    // send the user email verification
-    error = await firebaseErrorHandler(log, () async {
-      await userCredential.user!.sendEmailVerification().timeout(Duration(seconds: 5));
-    });
-    if (error != null) {
-      return error;
-    }
-
-    userDocData["last_verification_email"] = DateTime.timestamp();
-    error = await firebaseErrorHandler(log, () async {
-      await userDocRef.set(userDocData).timeout(Duration(seconds: 5));
-    });
     
     return error;
   }
@@ -79,7 +52,6 @@ class _SignupPageState extends State<SignupPage>{
     final log = Logger("Sign up user");
     showLoadingIcon();
 
-    // new error messages (can be null)
     ErrorCode? newEmailError;
     ErrorCode? newPasswordError;
 
@@ -105,17 +77,17 @@ class _SignupPageState extends State<SignupPage>{
       Navigator.of(context).pop();
       showToast(
         context,
-        "Sign up successful (check your inbox for a verification email) or account already exists.", 
+        "Sign up successful or account already exists.", 
         Duration(seconds: 3),
       );        
     }
 
     // set error messages
     setState(() {
-      passwordConfirmError = newPasswordError; // password errors should be displayed on confirm box (since it is lowest)
-      emailError = newEmailError;
+      signupFormKey.currentState!.setError(emailField.id, newEmailError);
+      signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
       if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-        passwordError = ErrorCodes.HIGHLIGHT_RED;
+        signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
       }
     });
 
@@ -124,44 +96,13 @@ class _SignupPageState extends State<SignupPage>{
 
   @override
   Widget build(BuildContext context) {
-    final TextFormField emailField = textFormField(
-      emailFieldController, 
-      emailFieldKey,
-      "Email",
-      emailError,
-      Icon(Icons.email),
-      (String? currentValue) => setState(() {
-        emailError = null; 
-        passwordError = null;
-        passwordConfirmError = null;
-      }),
-      (String? currentValue) {
-        if (currentValue == "") {
-          return "Please enter an email";
-        }
-        if (!EmailValidator.validate(emailFieldController.text)) {
-          return "Invalid email format";
-        }
-        else {
-          return null;
-        }
-      },
-    );
-
-    final TextFormField passwordField = textFormField(
-      passwordFieldController,
-      passwordFieldKey,
+    passwordField = Field(
       "Password",
-      passwordError,
       Icon(Icons.lock),
-      (String? currentValue) => setState(() {
-        emailError = null; 
-        passwordError = null;
-        passwordConfirmError = null;
-      }),
+      true,
       (String? currentValue) {
         List<String> specialCharacters = ["^", "\$", "*", ".", "[", "]", "{", "}", "(", ")", "?", '"', "!", "@", "#", "%", "&", "/", "\\", ",", ">", "<", "'", ":", ";", "|", "_", "~"];
-
+        
         if (currentValue == "") {
           return "Please enter a password";
         }
@@ -187,76 +128,45 @@ class _SignupPageState extends State<SignupPage>{
           return null;
         }
       },
-      obscureText: obscurePassword,
-      suffixIcon: Padding(
-        padding: const EdgeInsets.all(5),
-        child: IconButton.outlined(
-          color: ColorScheme.of(context).primary,
-          style: IconButton.styleFrom(
-            side: BorderSide(
-              width: 2.0, 
-              color: ColorScheme.of(context).primary,
-            ), 
-          ),
-          icon: obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-          onPressed: () => setState(() => obscurePassword = !obscurePassword)
-        ),
-      ),
     );
 
-    final TextFormField passwordConfirmField = textFormField(
-      passwordConfirmFieldController,
-      passwordConfirmFieldKey,
+    passwordConfirmField = Field(
       "Confirm password",
-      passwordConfirmError,
       Icon(Icons.lock),
-      (String? currentValue) => setState(() {
-        emailError = null; 
-        passwordError = null;
-        passwordConfirmError = null;
-      }),
+      true,
       (String? currentValue) {
         if (currentValue == "") {
           return "Please enter a password confirmation";
         }
-        else if (currentValue != passwordFieldController.text) {
+        else if (currentValue != signupFormKey.currentState!.text(passwordField.id)) {
           return "Passwords must match";
         }
         else {
           return null;
         }
       },
-      obscureText: obscurePasswordConfirm,
-      suffixIcon: Padding(
-        padding: const EdgeInsets.all(5),
-        child: IconButton.outlined(
-          color: ColorScheme.of(context).primary,
-          style: IconButton.styleFrom(
-            side: BorderSide(
-              width: 2.0, 
-              color: ColorScheme.of(context).primary,
-            ), 
-          ),
-          icon: obscurePasswordConfirm ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-          onPressed: () => setState(() => obscurePasswordConfirm = !obscurePasswordConfirm)
-        ),
-      ),
     );
 
-    final ElevatedButton signupButton = elevatedButton(
-      context,
+    final signupForm = ValidatedForm(
+      key: signupFormKey,
+      [
+        emailField,
+        passwordField,
+        passwordConfirmField
+      ]
+    );
+
+    final signupButton = StandardElevatedButton(
       "Sign up",
       () => throttledFunc(2000, () async {
-        bool emailValid = emailFieldKey.currentState!.validate();
-        bool passwordValid = passwordFieldKey.currentState!.validate();
-        bool passwordConfirmValid = passwordConfirmFieldKey.currentState!.validate();
-        if (emailValid && passwordValid && passwordConfirmValid) {
-          await signup(emailFieldController.text, passwordFieldController.text);
+        if (signupFormKey.currentState!.validateAll()) {
+          await signup(
+            signupFormKey.currentState!.text(emailField.id), 
+            signupFormKey.currentState!.text(passwordField.id), 
+          );
         }      
       }),
     );
-
-    final TextButton loginButton = textButton(context, "Login", () => Navigator.of(context).pop());
 
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15),
@@ -265,12 +175,8 @@ class _SignupPageState extends State<SignupPage>{
         children: [
           Text("Sign up", style: TextStyle(fontSize: 30)),
           SizedBox(height: 15),
-          emailField,
+          signupForm,
           SizedBox(height: 5),
-          passwordField,
-          SizedBox(height: 5),
-          passwordConfirmField,
-          SizedBox(height: 10),
           SizedBox(
             width: MediaQuery.of(context).size.width,
             child: signupButton, 
@@ -280,20 +186,11 @@ class _SignupPageState extends State<SignupPage>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Already have an account?"),
-              loginButton
+              StandardTextButton("Login", () => Navigator.of(context).pop())
             ]
           ),
           SizedBox(height: 5),
-          settingsButton(
-            "Swap color theme", 
-            Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
-            () async {
-              showLoadingIcon();
-              await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
-              setState(() {});
-              hideLoadingIcon();
-            }
-          ),
+          SwapThemeButton()
         ]
       ),
     );
