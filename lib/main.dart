@@ -108,27 +108,22 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // cut down on login page lines
-  // change logger names for the function name and file
+  // TODO: go through line by line. Think what you can improve more.
 
-  // consider removing uses of load icon, set error, etc. in error functions
   // add folders and categorize the files
   // add triple slash comments to everything important
 
-  // check the program against different aspect ratios
-  // check what normal keys are for (not global key, the normal ones)
-  // add const where possible
-  // modularize, check if you setState big widgets (avoid that!)
-  // use futurebuilder where necessary
-  // use mediaquery and layotbuilder where possbiles
-  // check where you can add animations / feedback
+  // allow reload with no wifi (split explore page scrollable part into separate section)
 
-  // make it all look good
-  // add more pre internet checks (add in global, make an internetCheck() function or smth)
-    // isn't it already taken care of through firebase error handler?
+  // think how to fix data integrity issues when combining auth and firestore. Do they need fixing?
+    // Think of possible issues that could arise (e.g. non-existing user doc, non-existing user in auth, etc.)
+
+  // consider swapping to .then().catchError() (think about afterError and how that's used)
+  // fix not seeing sign up events in analytics
   // ensure all async functions work through await (to avoid issues like a stuck loading icon)
   // ensure safety of api keys and such. Check nothing sensitive on github.
   // Minimize the loading times for things like signup() and login() to prevent enumeration attack
+    // Or maybe do something like using async functions with await and do them in background
   // make a custom form class for login and signup page
   // try adding firestore functions to take care of corrupted / incomplete docs or collections
     // e.g. ensuring all users have a liked_quotes collection
@@ -137,13 +132,9 @@ class _MyHomePageState extends State<MyHomePage> {
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // Don't just catch errors, actually affect the error messages or show a snackbar
   // do network checks (while ur in quote)
-  // test crashlytics works properly (can you see the crash events?)
-  // test analytics works properly (can you see login/logout events?)
   // USe leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
   // add more comments
-  // add triple slash comments to all classes and functions
-  // find any screen switches, check if you need to use navigatorKey anywhere. NO USE OF CONTEXT ANYWHERE after a screen switch (setState included)
   // see if you want to customize some text style (e.g. make it bold), use richtext
   // research and make good firebase security rules
   // look at earlier made files for style guides (e.g. login page or globals)
@@ -156,3 +147,5 @@ class _MyHomePageState extends State<MyHomePage> {
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
   // get better logo, remember to run the flutter launcher icons package
   // make it from scratch on a diff firebase project, have only this on github
+
+  // see if u can add cloud functions by linking firestore to an acc with no money inside

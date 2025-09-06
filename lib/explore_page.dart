@@ -49,7 +49,7 @@ class _ExplorePageState extends State<ExplorePage> {
   /// 
   /// Returns any errors along with the list of new quotes
   Future<(ErrorCode?, List<QuoteCard>)> getNextQuotesToScroll() async {
-    final log = Logger("Getting quotes to scroll");
+    final log = Logger("getNextQuotesToScroll() in explore_page.dart");
     ErrorCode? error;
 
     String? filter = filterKey.currentState!.value;

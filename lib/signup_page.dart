@@ -23,22 +23,24 @@ class _SignupPageState extends State<SignupPage>{
   late Field passwordConfirmField;
 
   /// Creates a new doc for a new user in the firestore database (users collection), returns an ErrorCode?
-  Future<ErrorCode?> createUserDoc(UserCredential userCredential) async {
-    final log = Logger("Creating new user doc");
-    ErrorCode? error; // contains errors occurred when creating the user doc
+  Future<ErrorCode?> createUserDoc(String email) async {
+    final log = Logger("createUserDoc() in signup_page.dart");
 
     // Create a new user doc in the firestore database
-    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(userCredential.user!.email);
+    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
+    DocumentReference placeholderDocRef = userDocRef.collection("liked_quotes").doc("placeholder");
     Map<String, dynamic> userDocData = {
       "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
       "last_password_reset_email": DateTime(2000),
       "last_quote_suggestion": DateTime(2000)
     };
-    error = await firebaseErrorHandler(log, () async {
-      await userDocRef.get().then((DocumentSnapshot docSnapshot) async {
-        await userDocRef.set(userDocData);
-        await userDocRef.collection("liked_quotes").doc("placeholder").set({});
-      }).timeout(Duration(seconds: 5));     
+
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
+        transaction.set(userDocRef, userDocData);
+        Map<String, dynamic> newData = {}; // this is used to prevent a dumb firebase error 
+        transaction.set(placeholderDocRef, newData);
+      }).timeout(Duration(seconds: 5));  
     });
     
     return error;
@@ -48,8 +50,8 @@ class _SignupPageState extends State<SignupPage>{
   /// 
   /// The user is not made aware if they are signing up an already existing user.
   /// This is to prevent an email enumeration attack.
-  Future<void> signup(String email, String password) async {    
-    final log = Logger("Sign up user");
+  Future<void> signup(String email, String password) async {
+    final log = Logger("signup() in signup_page.dart");
     showLoadingIcon();
 
     ErrorCode? newEmailError;
@@ -57,24 +59,30 @@ class _SignupPageState extends State<SignupPage>{
 
     // Attempt to signup the user and get the new user's credential (or get errors)
     UserCredential? newUserCredential;
-    (newEmailError, newPasswordError) = errorsForFields(
-      await firebaseErrorHandler(log, () async {
-        newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password
-        ).timeout(Duration(seconds: 5));
-        await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
-      }) 
-    );
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
+      newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password
+      ).timeout(Duration(seconds: 5));
+    });
 
-    // If a new user has been created, then create their doc in the database
-    if (newUserCredential != null) {
-      (newEmailError, newPasswordError) = errorsForFields(await createUserDoc(newUserCredential!));
+    // log the event in analytics
+    // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
+    await firebaseErrorHandler(log, () async {
+      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
+    });
+
+    // If a new user has been created successfully, then create their doc in the database
+    if (newUserCredential != null) { // you could also use if (error == null)
+      error = await createUserDoc(newUserCredential!.user!.email!);
     }
     
-    // if no errors from user creation or other, show success toast and return to LoginPage()
+    // if no errors from user creation, show success toast and return to LoginPage()
+    // do NOT use error == null, because error could be ErrorCodes.EMAIL_ALREADY_IN_USE
+    // errorsForFields ignores this in order to prevent an email enumeration attack
+    (newEmailError, newPasswordError) = errorsForFields(error);
     if (newEmailError == null && newPasswordError == null && mounted) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // return to login page
       showToast(
         context,
         "Sign up successful or account already exists.", 
@@ -83,13 +91,11 @@ class _SignupPageState extends State<SignupPage>{
     }
 
     // set error messages
-    setState(() {
-      signupFormKey.currentState!.setError(emailField.id, newEmailError);
-      signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
-      if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-        signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
-      }
-    });
+    signupFormKey.currentState!.setError(emailField.id, newEmailError);
+    signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
+    if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
+      signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
+    }
 
     hideLoadingIcon();
   }

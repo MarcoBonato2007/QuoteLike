@@ -18,23 +18,21 @@ class _MainPageState extends State<MainPage> {
   int currentPageIndex = 0; // 0 means explore, 1 means settings
   late Future<(ErrorCode?, List<String>)> likedQuotesResult; // we put this here to avoid rebuilding constantly
 
-
   /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
   Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
-    final log = Logger("Getting liked quotes");
+    final log = Logger("getLikedQuotes() in main_page.dart");
 
-    ErrorCode? error;
     List<String> likedQuotes = [];
-
-    error = await firebaseErrorHandler(log, () async {
+    
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance
         .collection("users")
         .doc(FirebaseAuth.instance.currentUser!.email)
         .collection("liked_quotes")
       .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
-          for (DocumentSnapshot doc in querySnapshot.docs) {
-            likedQuotes.add(doc.id);
-          }
+        for (DocumentSnapshot doc in querySnapshot.docs) {
+          likedQuotes.add(doc.id);
+        }
       });
     });
 
