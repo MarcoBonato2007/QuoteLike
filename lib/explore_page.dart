@@ -1,11 +1,3 @@
-// Search bar on top (with selection menu for searching by author vs by content)
-// Then is a filter button (random, most liked, liked by you, created by you (see bottom of comments))
-// Then is the actual quotes
-// Extra: a suggest quote button (adds to a firebase entry)
-// Extra: each user can make their own custom quotes
-  // Can be stored in their doc in a collection, e.g. "custom_quotes"
-  // will need max length / max size limits
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -135,20 +127,18 @@ class _ExplorePageState extends State<ExplorePage> {
         title: Text("Explore"),
         centerTitle: true,
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 25),
-            child: FloatingActionButton( // button to suggest a quote
-              elevation: 2,
-              backgroundColor: ColorScheme.of(context).primary,
-              foregroundColor: ColorScheme.of(context).surface,
-              child: Icon(Icons.add),
-              onPressed: () => showDialog(
-                context: context, 
-                builder: (context) => QuoteCreationPage()
-              ),
+          FloatingActionButton( // button to suggest a quote
+            elevation: 2,
+            backgroundColor: ColorScheme.of(context).primary,
+            foregroundColor: ColorScheme.of(context).surface,
+            child: Icon(Icons.add),
+            onPressed: () => showDialog(
+              context: context, 
+              builder: (context) => QuoteCreationPage()
             ),
           ),
           FloatingActionButton( // button to refresh the scrollable list of quotes

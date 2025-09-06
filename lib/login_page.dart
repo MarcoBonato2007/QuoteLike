@@ -1,15 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:email_validator/email_validator.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
-import 'package:quotebook/settings_page.dart';
 import 'package:quotebook/signup_page.dart';
+import 'package:quotebook/standard_widgets.dart';
 import 'package:quotebook/theme_settings.dart';
+import 'package:quotebook/validated_form.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,17 +18,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage>{
-  ErrorCode? emailError; // put here so login() and build() can both access them
-  final emailFieldController = TextEditingController();
-  final emailFieldKey = GlobalKey<FormFieldState>();
+  // The key used to access the form containing the email & password fields
+  final loginFormKey = GlobalKey<ValidatedFormState>();
+  Field emailField = EmailField();
+  late Field passwordField;
 
-  ErrorCode? passwordError;
-  final passwordFieldController = TextEditingController();
-  final passwordFieldKey = GlobalKey<FormFieldState>();
-
-  bool obscurePassword = true;
-
-  Future<ErrorCode?> sendPasswordResetEmail(String email, Map userDocData) async {
+  Future<ErrorCode?> sendPasswordResetEmail(String email) async {
     final log = Logger("Sending password reset email");
     ErrorCode? error;
     
@@ -40,83 +34,73 @@ class _LoginPageState extends State<LoginPage>{
       return error;
     }
 
-    userDocData["last_password_reset_email"] = DateTime.timestamp();
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
     error = await firebaseErrorHandler(log, () async {
-      await userDocRef.set(userDocData).timeout(Duration(seconds: 5));
+      await userDocRef.update({
+        "last_password_reset_email": DateTime.timestamp()
+      }).timeout(Duration(seconds: 5));
     });
     
-
     return error;
   }
 
   /// Attempts to send user a password reset email, shows any relevant errors.
   /// 
   /// Some errors are not shown, to prevent an email enumeration attack.
-  Future<void> forgotPassword(String email) async {
+  Future<ErrorCode?> forgotPassword(String email) async {
     final log = Logger("Forgot password function");
 
-    showLoadingIcon();
-
-    ErrorCode? newEmailError;
-    ErrorCode? newPasswordError;
-
-    (newEmailError, newPasswordError) = errorsForFields(await firebaseErrorHandler(log, () async {
+    ErrorCode? error;
+    
+    bool tooRecent = true;
+    error = await firebaseErrorHandler(log, () async {
       // Get user doc, check it exists, and send email if at least an hour has passed since the last password reset
       DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
       await userDocRef.get().then((DocumentSnapshot userDoc) async {
         if (userDoc.exists) { // we only do anything if the given email actually exists
-          Map<String, dynamic> userDocData = userDoc.data() as Map<String, dynamic>;
-          int minutesSinceLastPasswordResetEmail = DateTime.timestamp().difference(userDocData["last_password_reset_email"].toDate()).inMinutes;
+          int minutesSinceLastPasswordResetEmail = DateTime.timestamp().difference(userDoc["last_password_reset_email"].toDate()).inMinutes;
           if (minutesSinceLastPasswordResetEmail >= 60 && mounted) {
-            // attempt to send the password reset email, get any error messages
-            ErrorCode? error = await sendPasswordResetEmail(email, userDocData);
-            (newEmailError, newPasswordError) = errorsForFields(error);
+            tooRecent = false;
           }
         }
       }).timeout(Duration(seconds: 5));
-      }));
-
-    // if no errors occurred, show success toast
-    if (newEmailError == null && newPasswordError == null && mounted) {
-      showToast(
-        context, 
-        "If this account exists, and a password reset didn't take place within the last hour, then a password reset email has been sent.",
-        Duration(seconds: 5),
-      );
+    });
+    if (error != null) {
+      return error;
     }
 
-    setState(() { // update error texts
-      emailError = newEmailError;
-      passwordError = newPasswordError;
-    });
+    if (!tooRecent) {
+      error = await sendPasswordResetEmail(email);
+    }
+    else {
+      // we don't let the user know if a reset email was already sent recently.
+      // This prevents an email enumeration attack.
+    }
 
-    hideLoadingIcon();
+    return error;
   }
 
   /// Attempts to send a user a verification email (if one has not been sent too recently.)
   Future<ErrorCode?> sendEmailVerification(User user) async {
     final log = Logger("Sending email verification");
-
     ErrorCode? error;
 
-    // get the user doc
+    // Check if a verification email was already sent recently
+    bool tooRecent = true;
     DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(user.email);
-    late final Map<String, dynamic> userDocData;
     error = await firebaseErrorHandler(log, () async {
-      await userDocRef.get().then((DocumentSnapshot userDocSnapshot) async {
-        userDocData = userDocSnapshot.data() as Map<String, dynamic>;
+      await userDocRef.get().then((DocumentSnapshot userDoc) async {
+        int hoursSinceLastVerificationEmail = DateTime.timestamp().difference(userDoc["last_verification_email"].toDate()).inHours;
+        if (hoursSinceLastVerificationEmail >= 72) {
+          tooRecent = false;
+        }
       }).timeout(Duration(seconds: 5));
     });
-
     if (error != null) { // we always return the FIRST error encountered
       return error;
     }
 
-    // check if another verification email has been sent recently (< 3 days is too recent)
-    // if a verification email was not sent recently, a new one will be sent
-    int hoursSinceLastVerificationEmail = DateTime.timestamp().difference(userDocData["last_verification_email"].toDate()).inHours;
-    if (hoursSinceLastVerificationEmail <= 72 && mounted) {
+    if (tooRecent) {
       error = ErrorCodes.VERIFICATION_EMAIL_SENT_RECENTLY;         
     }
     else {
@@ -128,10 +112,11 @@ class _LoginPageState extends State<LoginPage>{
         return error;
       }
 
-      // set new email timestamp
-      userDocData["last_verification_email"] = DateTime.timestamp();
+      // set new verificationemail timestamp
       error = await firebaseErrorHandler(log, () async {
-        await userDocRef.set(userDocData).timeout(Duration(seconds: 5));
+        await userDocRef.update({
+          "last_verification_email": DateTime.timestamp()
+        }).timeout(Duration(seconds: 5));
       });
     }
 
@@ -146,7 +131,7 @@ class _LoginPageState extends State<LoginPage>{
     final log = Logger("Login");
     showLoadingIcon();
 
-    ErrorCode? newEmailError; // new error messages (can be null)
+    ErrorCode? newEmailError;
     ErrorCode? newPasswordError;
 
     // Attempt to log the user in
@@ -168,7 +153,7 @@ class _LoginPageState extends State<LoginPage>{
         showToast(
           context,
           ErrorCodes.NO_VERIFICATION_EMAIL.errorText + error.errorText, 
-          Duration(seconds: 3)
+          Duration(seconds: 5)
         );       
       }
       else if (mounted) {
@@ -180,12 +165,10 @@ class _LoginPageState extends State<LoginPage>{
       }        
     }
 
-    // if the user logs in then the screen swaps and setstate can't be used, so we need this if statement
+    // Set the field errors. The if statement is necessary!
     if (newEmailError != null || newPasswordError != null) {
-      setState(() {
-        emailError = newEmailError;
-        passwordError = newPasswordError;
-      });        
+      loginFormKey.currentState!.setError(emailField.id, newEmailError);
+      loginFormKey.currentState!.setError(passwordField.id, newPasswordError);
     }
 
     hideLoadingIcon(); 
@@ -193,97 +176,71 @@ class _LoginPageState extends State<LoginPage>{
 
   @override
   Widget build(BuildContext context) {
-    final TextFormField emailField = textFormField(
-      emailFieldController, 
-      emailFieldKey,
-      "Email",
-      emailError,
-      Icon(Icons.email),
-      (String? currentValue) => setState(() {
-        emailError = null; 
-        passwordError = null;
-      }),
-      (String? currentValue) {
-        if (currentValue == "") {
-          return "Please enter an email";
-        }
-        if (!EmailValidator.validate(emailFieldController.text)) {
-          return "Invalid email format";
-        }
-        else {
-          return null;
-        }
-      },
-    );
-
-    final TextFormField passwordField = textFormField(
-      passwordFieldController,
-      passwordFieldKey,
+    passwordField = Field(
       "Password",
-      passwordError,
       Icon(Icons.lock),
-      (String? currentValue) => setState(() {
-        emailError = null; 
-        passwordError = null;
-      }),
+      true,
       (String? currentValue) {
-        if (currentValue == "") {
+        if (currentValue == "" || currentValue == null) {
           return "Please enter a password";
         }
         else {
           return null;
         }
       },
-      obscureText: obscurePassword,
-      counter: textButton(
-        context,
+      counter: StandardTextButton(
         "Forgot password?",
         () => throttledFunc(2000, () async {
-          setState(() {
-            emailError = null;
-            passwordError = null;
-          });
-          if (emailFieldKey.currentState!.validate()) {
-            await forgotPassword(emailFieldController.text);
+          loginFormKey.currentState!.removeErrors();
+          if (loginFormKey.currentState!.validate(emailField.id)) {
+            showLoadingIcon();
+            ErrorCode? error = await forgotPassword(loginFormKey.currentState!.text(emailField.id));
+
+            // if no errors occurred, show success toast
+            if (error == null && context.mounted) {
+              showToast(
+                context, 
+                "If this account exists, and a password reset didn't take place within the last hour, then a password reset email has been sent.",
+                Duration(seconds: 5),
+              );
+            }
+
+            // set the errors for the email and password fields
+            ErrorCode? newEmailError, newPasswordError;
+            (newEmailError, newPasswordError) = errorsForFields(error);
+            loginFormKey.currentState!.setError(emailField.id, newEmailError);
+            loginFormKey.currentState!.setError(passwordField.id, newPasswordError);
+
+            hideLoadingIcon();
           }
         })
       ),
-      suffixIcon: Padding(
-        padding: const EdgeInsets.all(5),
-        child: IconButton.outlined(
-          color: ColorScheme.of(context).primary,
-          style: IconButton.styleFrom(
-            side: BorderSide(
-              width: 2.0, 
-              color: ColorScheme.of(context).primary,
-            ), 
-          ),
-          icon: obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-          onPressed: () => setState(() => obscurePassword = !obscurePassword)
-        ),
-      ),
     );
 
-    final ElevatedButton loginButton = elevatedButton(
-      context, 
+    final loginForm = ValidatedForm(
+      key: loginFormKey, 
+      [
+        emailField,
+        passwordField
+      ]
+    );
+
+    final loginButton = StandardElevatedButton(
       "Login",
       () => throttledFunc(2000, () async {
-        bool emailValid = emailFieldKey.currentState!.validate();
-        bool passwordValid = passwordFieldKey.currentState!.validate();
-        if (emailValid && passwordValid) {
-          await login(emailFieldController.text, passwordFieldController.text);
+        if (loginFormKey.currentState!.validateAll()) {
+          await login(
+            loginFormKey.currentState!.text(emailField.id), 
+            loginFormKey.currentState!.text(passwordField.id)
+          );
         }  
       })
     );
 
-    final TextButton signupButton = textButton(
-      context, 
+    final signupButton = StandardTextButton(
       "Sign up",
       () {
-        setState(() {
-          emailError = null;
-          passwordError = null;
-        });
+        loginFormKey.currentState!.removeErrors();
         Navigator.push(
           context, 
           MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
@@ -298,10 +255,8 @@ class _LoginPageState extends State<LoginPage>{
         children: [
           Text("Log in", style: TextStyle(fontSize: 30)),
           SizedBox(height: 15),
-          emailField,
+          loginForm,
           SizedBox(height: 5),
-          passwordField,
-          SizedBox(height: 10),
           SizedBox(
             width: MediaQuery.of(context).size.width,
             child: loginButton, 
@@ -315,16 +270,7 @@ class _LoginPageState extends State<LoginPage>{
             ]
           ),
           SizedBox(height: 5),
-          settingsButton(
-            "Swap color theme", 
-            Provider.of<ThemeSettings>(context, listen: false).isColorThemeLight ? Icon(Icons.light_mode) : Icon(Icons.dark_mode), 
-            () async {
-              showLoadingIcon();
-              await Provider.of<ThemeSettings>(context, listen: false).invertColorTheme();
-              setState(() {});
-              hideLoadingIcon();
-            }
-          ),
+          SwapThemeButton()
         ]
       ),
     );

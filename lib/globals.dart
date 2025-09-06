@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotebook/constants.dart';
 
-// this is used to access the new context after a login/logout (since that causes a screen switch)
+// This file contains global functions used in various files
+
+/// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Shows a non user dismissable CircularProgressIndicator() overlay
@@ -22,75 +24,16 @@ void showLoadingIcon() {
 /// Same as Navigator.of(context).pop(), used with showLoadingIcon()
 void hideLoadingIcon() => Navigator.of(navigatorKey.currentContext!).pop();
 
-/// standardizes the style of ElevatedButtons used in this project.
-ElevatedButton elevatedButton(BuildContext context, String text, Function() onPressed) {
-  return ElevatedButton(
-    onPressed: onPressed,
-    style: ElevatedButton.styleFrom(
-      backgroundColor: ColorScheme.of(context).primary,
-      foregroundColor: ColorScheme.of(context).surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10))  
-    ),
-    child: Text(text)
-  );
-}
-
-/// standardizes the style of TextFormFields used in this project
-TextFormField textFormField(
-  TextEditingController controller,
-  GlobalKey<FormFieldState> key,
-  String hintText,
-  ErrorCode? error,
-  Icon prefixIcon,
-  Function(String? inputtedValue) onChanged,
-  String? Function(String?) validator,
-  {
-    bool obscureText = false,
-    Widget? counter,
-    Widget? suffixIcon
-  }
-) {
-  return TextFormField(
-    controller: controller,
-    key: key,
-    onChanged: onChanged,
-    autovalidateMode: AutovalidateMode.onUserInteraction,
-    validator: validator,
-    obscureText: obscureText,
-    decoration: InputDecoration(
-      helperText: "",
-      errorMaxLines: 3,
-      border: OutlineInputBorder(),
-      hintText: hintText,
-      errorText: error?.errorText,
-      prefixIcon: prefixIcon,
-      counter: counter,
-      suffixIcon: suffixIcon
-    ),
-  );
-}
-
-/// standardizes the style of TextButtons used in this project
-TextButton textButton(BuildContext context, String text, Function() onPressed) {
-  return TextButton(
-    style: TextButton.styleFrom(
-      minimumSize: Size.zero, 
-      padding: EdgeInsetsGeometry.only(left: 6, right: 6),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap
-    ),
-    onPressed: onPressed,
-    child: Text(text)
-  );
-}
-
 /// try excepts a function using firebase in some way, returns an error message (see constants.dart)
-Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc) async {
+Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true}) async {
   ErrorCode? error;
 
   // first check for internet connection.
-  if ((await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
+  if (doNetworkCheck && (await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
     error = ErrorCodes.NETWORK_ERROR;
+    return error;
   }
+
   try { // next, run the function.
     await firebaseFunc();
   }
@@ -147,7 +90,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc) asy
   return error;
 }
 
-/// convert an error from firebaseAuthErrorCatch() into errors for an email and password field
+/// convert an error from firebaseErrorHandler() into errors for an email and password field
 (ErrorCode?, ErrorCode?) errorsForFields(ErrorCode? error) {
   ErrorCode? emailError, passwordError;
   
