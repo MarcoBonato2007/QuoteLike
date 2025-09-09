@@ -1,11 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
+import 'package:provider/provider.dart';
 import 'package:quotebook/explore_page.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/quote_creation_page.dart';
 import 'package:quotebook/settings_page.dart';
+import 'package:quotebook/theme_settings.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -16,57 +15,48 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int currentPageIndex = 0; // 0 means explore, 1 means settings
-  late Future<(ErrorCode?, List<String>)> likedQuotesResult; // we put this here to avoid rebuilding constantly
-
-  /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
-  Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
-    final log = Logger("getLikedQuotes() in main_page.dart");
-
-    List<String> likedQuotes = [];
-    
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance
-        .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.email)
-        .collection("liked_quotes")
-      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
-        for (DocumentSnapshot doc in querySnapshot.docs) {
-          likedQuotes.add(doc.id);
-        }
-      });
-    });
-
-    return (error, likedQuotes);
-  }
+  
+  final explorePageKey = GlobalKey<ExplorePageState>(); // used to access the paging controller inside explore page
 
   @override
-  void initState() {
-    likedQuotesResult = getLikedQuotes();
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {    
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.only(left: 15, right: 15),
         child: IndexedStack(
           index: currentPageIndex,
           children: [
-            FutureBuilder(
-              future: likedQuotesResult,
-              builder: (context, snapshot) {
-                if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
-                  debugPrint("Unknown flutter error getting liked quotes: ${snapshot.error}");
-                  return Center(child: Text("An unknown error occurred"));
-                }
-                else if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                else {
-                  return ExplorePage(snapshot.data!.$2);
-                }
-              }
+            Scaffold(
+              appBar: AppBar(
+                title: Text("Explore"),
+                centerTitle: true,
+              ),
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+              floatingActionButton: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  FloatingActionButton( // button to suggest a quote
+                    elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
+                    backgroundColor: ColorScheme.of(context).primary,
+                    foregroundColor: ColorScheme.of(context).surface,
+                    child: Icon(Icons.add),
+                    onPressed: () => showDialog(
+                      context: context, 
+                      builder: (context) => QuoteCreationPage()
+                    ),
+                  ),
+                  FloatingActionButton( // button to refresh the scrollable list of quotes
+                    elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
+                    backgroundColor: ColorScheme.of(context).primary,
+                    foregroundColor: ColorScheme.of(context).surface,
+                    child: Icon(Icons.refresh),
+                    onPressed: () => throttledFunc(1000, () {
+                      explorePageKey.currentState!.refresh();                  
+                    })
+                  ),
+                ],
+              ),
+              body: ExplorePage(key: explorePageKey)
             ),
             Scaffold(
               appBar: AppBar(

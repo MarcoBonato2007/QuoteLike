@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage>{
             await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));      
           });
 
-          // set new verificationemail timestamp
+          // set new verification email timestamp
           error ??= await firebaseErrorHandler(log, () async {
             await userDocRef.update({
               "last_verification_email": DateTime.timestamp()
@@ -121,7 +121,7 @@ class _LoginPageState extends State<LoginPage>{
 
     // log the event in analytics
     // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
-    await firebaseErrorHandler(log, () async {
+    await firebaseErrorHandler(log, useCrashlytics: true, () async {
       await FirebaseAnalytics.instance.logLogin().timeout(Duration(seconds: 5));
     });
     

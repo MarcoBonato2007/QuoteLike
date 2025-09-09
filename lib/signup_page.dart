@@ -22,7 +22,7 @@ class _SignupPageState extends State<SignupPage>{
   late Field passwordField;
   late Field passwordConfirmField;
 
-  /// Creates a new doc for a new user in the firestore database (users collection), returns an ErrorCode?
+  /// Creates a new doc for a new user in the firestore database (users collection)
   Future<ErrorCode?> createUserDoc(String email) async {
     final log = Logger("createUserDoc() in signup_page.dart");
 
@@ -40,7 +40,7 @@ class _SignupPageState extends State<SignupPage>{
         transaction.set(userDocRef, userDocData);
         Map<String, dynamic> newData = {}; // this is used to prevent a dumb firebase error 
         transaction.set(placeholderDocRef, newData);
-      });  
+      }).timeout(Duration(seconds: 5));  
     });
     
     return error;
@@ -57,13 +57,13 @@ class _SignupPageState extends State<SignupPage>{
       newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password
-      );
+      ).timeout(Duration(seconds: 5));
     });
 
     // log the event in analytics
     // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
-    await firebaseErrorHandler(log, () async {
-      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password");
+    await firebaseErrorHandler(log, useCrashlytics: true, () async {
+      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
     });
 
     // If a new user has been created successfully, then create their doc in the database
