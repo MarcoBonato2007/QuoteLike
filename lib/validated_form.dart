@@ -2,19 +2,6 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:quotebook/constants.dart';
 
-/// This is the standard email validator used by email fields
-String? emailValidator(String? inputtedValue) {
-  if (inputtedValue == "" || inputtedValue == null) {
-    return "Please enter an email";
-  }
-  if (!EmailValidator.validate(inputtedValue)) {
-    return "Invalid email format";
-  }
-  else {
-    return null;
-  }
-}
-
 /// The user uses this to input the properties of the forms they want to create.
 /// 
 /// The id doubles as the hint text. 
@@ -37,13 +24,23 @@ class Field {
   );
 }
 
-/// The standard field for an email
+/// The standard field for an email (always the same)
 class EmailField extends Field {
   EmailField() : super(
     "Email",
     Icon(Icons.email),
     false,
-    emailValidator,  
+    (String? inputtedValue) {
+      if (inputtedValue == "" || inputtedValue == null) {
+        return "Please enter an email";
+      }
+      if (!EmailValidator.validate(inputtedValue)) {
+        return "Invalid email format";
+      }
+      else {
+        return null;
+      }
+    },  
   );
 }
 

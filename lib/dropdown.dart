@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:provider/provider.dart';
+import 'package:quotebook/theme_settings.dart';
 
+/// Used to make dropdown menus (used in explore_page.dart)
 class Dropdown extends StatelessWidget {
   final BuildContext context;
   final GlobalKey<FormFieldState> fieldKey;
@@ -31,12 +34,10 @@ class Dropdown extends StatelessWidget {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
       value: initialValue,
       key: fieldKey,
-      elevation: 2,
+      elevation: Provider.of<ThemeSettings>(context, listen: false).elevation.toInt(),
       hint: Text(hintText),
       onChanged: (dynamic newValue) {
-        if (pagingController != null) {
-          pagingController!.refresh();
-        }
+        pagingController?.refresh();
       },
       decoration: InputDecoration(
         prefixIcon: icon,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
@@ -6,25 +7,48 @@ import 'package:quotebook/constants.dart';
 import 'package:quotebook/dropdown.dart';
 import 'package:quotebook/globals.dart';
 import 'package:quotebook/quote_card.dart';
-import 'package:quotebook/quote_creation_page.dart';
 
 class ExplorePage extends StatefulWidget {
-  final List<String> likedQuotes;
-  const ExplorePage(this.likedQuotes, {super.key});
+  const ExplorePage({super.key});
 
   @override
-  State<ExplorePage> createState() => _ExplorePageState();
+  State<ExplorePage> createState() => ExplorePageState();
 }
 
-class _ExplorePageState extends State<ExplorePage> {
+class ExplorePageState extends State<ExplorePage> {
   final sortKey = GlobalKey<FormFieldState>();
   final filterKey = GlobalKey<FormFieldState>();
   DocumentSnapshot? lastQuoteDoc;
 
+  late Future<(ErrorCode?, List<String>)> likedQuotesFuture;
+  List<String>? likedQuotes;
   late final PagingController<int, QuoteCard> pagingController;
+
+  /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
+  Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
+    final log = Logger("getLikedQuotes() in main_page.dart");
+
+    List<String> likedQuotes = [];
+    
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .collection("liked_quotes")
+      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
+        for (DocumentSnapshot doc in querySnapshot.docs) {
+          likedQuotes.add(doc.id);
+        }
+      });
+    });
+
+    return (error, likedQuotes);
+  }
 
   @override
   void initState() {
+    super.initState();
+    likedQuotesFuture = getLikedQuotes();
     pagingController = PagingController<int, QuoteCard>(
       getNextPageKey: (state) => state.lastPageIsEmpty ? null : 0,
       fetchPage: (pageKey) async {
@@ -42,7 +66,6 @@ class _ExplorePageState extends State<ExplorePage> {
         setState(() {lastQuoteDoc = null;});
       }
     });
-    super.initState();
   }
 
   /// Gets the next 10 quotes to scroll after lastQuoteDoc
@@ -60,10 +83,10 @@ class _ExplorePageState extends State<ExplorePage> {
 
     if (filter != "None" && filter != null) {
       if (filter == "Liked") {
-        query = query.where(FieldPath.documentId, whereIn: widget.likedQuotes);
+        query = query.where(FieldPath.documentId, whereIn: likedQuotes);
       }
       else if (filter == "Not liked") {
-        query = query.where(FieldPath.documentId, whereNotIn: widget.likedQuotes);
+        query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
       }
     }
     
@@ -97,13 +120,24 @@ class _ExplorePageState extends State<ExplorePage> {
             doc["author"], 
             doc["creation"], 
             doc["likes"],
-            widget.likedQuotes.contains(doc.id)
+            likedQuotes!.contains(doc.id)
           ));
         }
       }).timeout(Duration(seconds: 5))     
     );
 
     return (error, queryResults);
+  }
+
+  void refresh() {
+    if (likedQuotes != null) {
+      pagingController.refresh();
+    }
+    else {
+      likedQuotes = null;
+      likedQuotesFuture = getLikedQuotes();
+      setState(() {});
+    }
   }
 
   @override
@@ -122,63 +156,49 @@ class _ExplorePageState extends State<ExplorePage> {
       {"value": "Recent", "label": "Recent"},
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Explore"),
-        centerTitle: true,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          FloatingActionButton( // button to suggest a quote
-            elevation: 2,
-            backgroundColor: ColorScheme.of(context).primary,
-            foregroundColor: ColorScheme.of(context).surface,
-            child: Icon(Icons.add),
-            onPressed: () => showDialog(
-              context: context, 
-              builder: (context) => QuoteCreationPage()
-            ),
+    return Column(
+      children: [
+        SizedBox(height: 15),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
+          children: [
+            Dropdown(context, filterKey, filterOptions, "Filter", 155, icon: Icon(Icons.filter_list), pagingController: pagingController),
+            Dropdown(context, sortKey, sortOptions, "Sort", 155, icon: Icon(Icons.sort), pagingController: pagingController),
+          ]
+        ),
+        Expanded(
+          child: FutureBuilder(
+            future: likedQuotesFuture, // using this variable prevents explore page from being reloaded constantly
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              else if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
+                ErrorCode? error = snapshot.data!.$1;
+                if (snapshot.data!.$1 == null) {
+                  error = ErrorCodes.UNKNOWN_ERROR;
+                }
+                Logger("Getting liked quotes").warning("Getting liked quotes: ${error!.errorText}", snapshot.error, snapshot.stackTrace);
+                return Center(child: Text(error.errorText));
+              }
+              else {
+                likedQuotes = snapshot.data!.$2;
+                return PagingListener(
+                  controller: pagingController,
+                  builder: (context, state, fetchNextPage) => PagedListView(
+                    state: state,
+                    fetchNextPage: fetchNextPage,
+                    builderDelegate: PagedChildBuilderDelegate<QuoteCard>(
+                      itemBuilder: (context, item, index) => item
+                    )
+                  )
+                );
+              }
+            }
           ),
-          FloatingActionButton( // button to refresh the scrollable list of quotes
-            elevation: 2,
-            backgroundColor: ColorScheme.of(context).primary,
-            foregroundColor: ColorScheme.of(context).surface,
-            child: Icon(Icons.refresh),
-            onPressed: () => throttledFunc(1000, () => pagingController.refresh())
-          ),
-        ],
-      ),
-
-      body: Column(
-        children: [
-          SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
-            children: [
-              Dropdown(context, filterKey, filterOptions, "Filter", 155, icon: Icon(Icons.filter_list), pagingController: pagingController),
-              Dropdown(context, sortKey, sortOptions, "Sort", 155, icon: Icon(Icons.sort), pagingController: pagingController),
-            ]
-          ),
-          SizedBox(height: 15),
-          SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height-300,
-            child: PagingListener(
-              controller: pagingController,
-              builder: (context, state, fetchNextPage) => PagedListView(
-                state: state,
-                fetchNextPage: fetchNextPage,
-                builderDelegate: PagedChildBuilderDelegate<QuoteCard>(
-                  itemBuilder: (context, item, index) => item
-                )
-              )
-            ),
-          ),
-        ]
-      ),
+        ),
+      ]
     );
   }
 }

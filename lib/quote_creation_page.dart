@@ -108,16 +108,18 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
             if (quoteCreationFormKey.currentState!.validateAll()) {
               showLoadingIcon();
               ErrorCode? error = await addSuggestion();
+              hideLoadingIcon();
+              
               if (context.mounted) {
                 Navigator.of(context).pop(); // remove the suggestion dialog
               }
+
               if (error != null && context.mounted) {
                 showToast(context, error.errorText, Duration(seconds: 3));
               }
               else if (context.mounted) {
                 showToast(context, "Suggestion received", Duration(seconds: 2));
               }
-              hideLoadingIcon();
             }
           }
         ),
@@ -130,7 +132,6 @@ class _QuoteCreationPageState extends State<QuoteCreationPage> {
             child: quoteCreationForm
           ),
           SizedBox(height: 5),
-
         ]
       ),
     );

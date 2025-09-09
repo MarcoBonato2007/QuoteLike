@@ -20,8 +20,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
-  await FirebaseAnalytics.instance.logAppOpen();
-
+  await firebaseErrorHandler(Logger("Logging app open"), useCrashlytics: true, () async {
+    await FirebaseAnalytics.instance.logAppOpen();
+  });
+  
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError; // report errors
   PlatformDispatcher.instance.onError = (error, stack) { // report async errors
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -108,14 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // TODO: go through line by line, each file
-    // Is it repeated?
-    // Think carefully about each possibility. What will happen? Any paths that will lead to errors?
-    // Is there good whitespace?
-    // Can I replace it with something more standard?
-    // add comments
-
-  // allow reload with no wifi (split explore page scrollable part into separate section)
+  // fix failed to get service from broker error. KEEP TRYING!
 
   // think how to fix data integrity issues when combining auth and firestore. Do they need fixing?
     // Think of possible issues that could arise (e.g. non-existing user doc, non-existing user in auth, etc.)
@@ -134,6 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // add more comments
   // research and make good firebase security rules
   // check style and code consistency
+  // add a lot of initial quotes
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // research common security issues, ask chatgpt, try to find 
   // fix the failed to get service from broker error

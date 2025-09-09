@@ -3,8 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 import 'package:quotebook/constants.dart';
 import 'package:quotebook/globals.dart';
+import 'package:quotebook/theme_settings.dart';
 
 class QuoteCard extends StatefulWidget {
   final String id;
@@ -126,7 +128,6 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
       ),
     );
     SizedBox quoteBox = SizedBox(
-      width: 300,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -151,13 +152,14 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     );
 
     Card mainCard = Card(
-      elevation: 2,
+      elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
       child: Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 10, left: 15, right: 15),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            quoteBox,
+            Expanded(child: quoteBox),
+            SizedBox(width: 10),
             likeButton
           ],
         ),

@@ -4,7 +4,7 @@ import 'package:quotebook/globals.dart';
 import 'package:quotebook/standard_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Swaps the theme between light and dark modes
+/// A button to swap the theme between light and dark modes
 class SwapThemeButton extends StatefulWidget {
   const SwapThemeButton({super.key});
 
@@ -33,6 +33,7 @@ class _SwapThemeButtonState extends State<SwapThemeButton> {
 /// Only one instance exists, in main()
 class ThemeSettings extends ChangeNotifier {
   bool isColorThemeLight;
+  double elevation = 2;
 
   ThemeSettings(this.isColorThemeLight);
 

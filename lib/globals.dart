@@ -25,8 +25,9 @@ void showLoadingIcon() {
 void hideLoadingIcon() => Navigator.of(navigatorKey.currentContext!).pop();
 
 /// try excepts a function using firebase in some way, returns an error message (see constants.dart)
-Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true}) async {
+Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true, bool useCrashlytics = false}) async {
   ErrorCode? error;
+  bool errorLoggedInCrashlytics = false;
 
   // first check for internet connection.
   if (doNetworkCheck && (await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
@@ -38,7 +39,6 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     await firebaseFunc();
   }
   on FirebaseException catch (e, stackTrace) { // handle possible errors
-
     if (e.code == "invalid-email" || e.code == "channel-error") { // channel-error means empty input of some kind
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.INVALID_EMAIL;
@@ -67,21 +67,52 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     else {
       log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.UNKNOWN_ERROR;
-      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
-        error,
-        stackTrace,
-        reason: '${log.name}: Unknown firebase error; ${e.code}',
-      );
+      try {
+        await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
+          error,
+          stackTrace,
+          reason: '${log.name}: Unknown firebase error; ${e.code}',
+        );
+        errorLoggedInCrashlytics = true;        
+      }
+      catch (e, stackTrace) {
+        log.warning("${log.name}: Crashlytics failed", e, stackTrace);
+      }
     }
+  }
+  on TimeoutException catch (e, stackTrace) {
+    log.info("${log.name}: Timeout caught error.", e, stackTrace);
+    error = ErrorCodes.TIMEOUT;
   }
   catch (e, stackTrace) { // catch any non-firebase errors
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
     error = ErrorCodes.UNKNOWN_ERROR;
-    await FirebaseCrashlytics.instance.recordError( // we always record unknown errors
-      error,
-      stackTrace,
-      reason: '${log.name}: Unknown flutter error',
-    );
+    try {
+      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
+        error,
+        stackTrace,
+        reason: '${log.name}: Unknown flutter error',
+      );
+      errorLoggedInCrashlytics = true;      
+    }
+    catch (e, stackTrace) {
+      log.warning("${log.name}: Crashlytics failed", e, stackTrace);
+    }
+
+  }
+
+  if (!errorLoggedInCrashlytics && useCrashlytics) {
+    try {
+      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
+        error,
+        null,
+        reason: '${log.name}: Unknown flutter error',
+      );      
+    }
+    catch (e, stackTrace) {
+      log.warning("${log.name}: Crashlytics failed", e, stackTrace);
+    }
+
   }
 
   return error;
