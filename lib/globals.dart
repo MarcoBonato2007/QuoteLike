@@ -98,10 +98,9 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     catch (e, stackTrace) {
       log.warning("${log.name}: Crashlytics failed", e, stackTrace);
     }
-
   }
 
-  if (!errorLoggedInCrashlytics && useCrashlytics) {
+  if (!errorLoggedInCrashlytics && useCrashlytics && error != null) {
     try {
       await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
         error,
