@@ -161,12 +161,13 @@ class ExplorePageState extends State<ExplorePage> {
         SizedBox(height: 15),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          spacing: (MediaQuery.of(context).size.width-15*2-155*2)/3,
+          spacing: (MediaQuery.of(context).size.width-15*2-171*2)/3,
           children: [
-            Dropdown(context, filterKey, filterOptions, "Filter", 155, icon: Icon(Icons.filter_list), pagingController: pagingController),
-            Dropdown(context, sortKey, sortOptions, "Sort", 155, icon: Icon(Icons.sort), pagingController: pagingController),
+            Dropdown(context, filterKey, filterOptions, "Filter", 171, icon: Icon(Icons.filter_list), pagingController: pagingController),
+            Dropdown(context, sortKey, sortOptions, "Sort", 171, icon: Icon(Icons.sort), pagingController: pagingController),
           ]
         ),
+        SizedBox(height: 10),
         Expanded(
           child: FutureBuilder(
             future: likedQuotesFuture, // using this variable prevents explore page from being reloaded constantly

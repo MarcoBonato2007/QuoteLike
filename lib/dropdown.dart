@@ -32,8 +32,10 @@ class Dropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
-      value: initialValue,
+      isDense: true,
+      initialValue: initialValue,
       key: fieldKey,
+      padding: EdgeInsetsGeometry.zero,
       elevation: Provider.of<ThemeSettings>(context, listen: false).elevation.toInt(),
       hint: Text(hintText),
       onChanged: (dynamic newValue) {
@@ -42,7 +44,7 @@ class Dropdown extends StatelessWidget {
       decoration: InputDecoration(
         prefixIcon: icon,
         border: OutlineInputBorder(),
-        contentPadding: EdgeInsetsGeometry.only(left: 10)
+        contentPadding: EdgeInsetsGeometry.zero
       ),
       selectedItemBuilder: (BuildContext context) {
         return options.map((option) {

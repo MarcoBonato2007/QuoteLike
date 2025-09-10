@@ -110,8 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // fix failed to get service from broker error. KEEP TRYING!
-
   // think how to fix data integrity issues when combining auth and firestore. Do they need fixing?
     // Think of possible issues that could arise (e.g. non-existing user doc, non-existing user in auth, etc.)
 
