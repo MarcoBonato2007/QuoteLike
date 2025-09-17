@@ -18,9 +18,7 @@ import 'package:quotelike/firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug
-  );
+  await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
   
   await firebaseErrorHandler(Logger("Logging app open"), useCrashlytics: true, () async {
     await FirebaseAnalytics.instance.logAppOpen();
@@ -112,14 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish    
-  // completely revamp the github (clone it and replace everything)
-    // check that the services and firebase files is NOT being uploaded BEFORE doing it
-  // update your readme. Publicly show security rules and db structure.
-    // Also mention how to setup (e.g. settings, app check, etc.)
-    // Mention how to set up debug mode
-
-// ---------------------------------------------------------
-
   // allow changing emails
   // add readmore package for long quotes
 
