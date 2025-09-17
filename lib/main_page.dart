@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:quotebook/explore_page.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/quote_creation_page.dart';
-import 'package:quotebook/settings_page.dart';
-import 'package:quotebook/theme_settings.dart';
+import 'package:quotelike/explore_page.dart';
+import 'package:quotelike/suggestion_creation_page.dart';
+import 'package:quotelike/settings_page.dart';
+import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/rate_limiting.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -42,7 +42,7 @@ class _MainPageState extends State<MainPage> {
                     child: Icon(Icons.add),
                     onPressed: () => showDialog(
                       context: context, 
-                      builder: (context) => QuoteCreationPage()
+                      builder: (context) => SuggestionCreationPage()
                     ),
                   ),
                   FloatingActionButton( // button to refresh the scrollable list of quotes

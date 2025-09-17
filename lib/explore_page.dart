@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
-import 'package:quotebook/dropdown.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/quote_card.dart';
+import 'package:quotelike/constants.dart';
+import 'package:quotelike/dropdown.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/quote_card.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -29,18 +29,20 @@ class ExplorePageState extends State<ExplorePage> {
     final log = Logger("getLikedQuotes() in main_page.dart");
 
     List<String> likedQuotes = [];
+    ErrorCode? error;
     
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
+    ErrorCode? afterError = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance
         .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.email)
+        .doc(FirebaseAuth.instance.currentUser!.uid)
         .collection("liked_quotes")
-      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
+      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
         for (DocumentSnapshot doc in querySnapshot.docs) {
           likedQuotes.add(doc.id);
-        }
-      });
+        }          
+      }).timeout(Duration(seconds: 5));
     });
+    error ??= afterError;
 
     return (error, likedQuotes);
   }
@@ -110,7 +112,7 @@ class ExplorePageState extends State<ExplorePage> {
     query = query.limit(10);
 
     error = await firebaseErrorHandler(log, () async =>
-      await query.get().then((QuerySnapshot querySnapshot) {
+      await query.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
         for (DocumentSnapshot doc in querySnapshot.docs) {
           if (doc.id == "placeholder") {continue;}
           lastQuoteDoc = doc;
@@ -181,7 +183,7 @@ class ExplorePageState extends State<ExplorePage> {
                   error = ErrorCodes.UNKNOWN_ERROR;
                 }
                 Logger("Getting liked quotes").warning("Getting liked quotes: ${error!.errorText}", snapshot.error, snapshot.stackTrace);
-                return Center(child: Text(error.errorText));
+                return Center(child: Text("${error.errorText}. Try reloading (bottom right button)."));
               }
               else {
                 likedQuotes = snapshot.data!.$2;

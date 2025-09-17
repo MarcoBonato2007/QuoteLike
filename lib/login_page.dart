@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/signup_page.dart';
-import 'package:quotebook/standard_widgets.dart';
-import 'package:quotebook/theme_settings.dart';
-import 'package:quotebook/validated_form.dart';
+import 'package:quotelike/constants.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/signup_page.dart';
+import 'package:quotelike/standard_widgets.dart';
+import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/validated_form.dart';
+import 'package:quotelike/rate_limiting.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,75 +23,54 @@ class _LoginPageState extends State<LoginPage>{
   Field emailField = EmailField();
   late Field passwordField;
 
-  Future<ErrorCode?> sendPasswordResetEmail(String email) async {
-    final log = Logger("sendPasswordResetEmail() in login_page.dart");
+  /// Attempts to send user a password reset email, shows any relevant errors.
+  Future<void> forgotPassword(String email) async {
+    final log = Logger("forgotPassword() in login_page.dart");
+    showLoadingIcon();
     
-    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
+    ErrorCode? error = await RateLimits.PASSWORD_RESET_EMAIL.testCooldown(email);
+    error ??= await firebaseErrorHandler(log, () async {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email).timeout(Duration(seconds: 5));
     });
-    error ??= await firebaseErrorHandler(log, () async {
-      await userDocRef.update({
-        "last_password_reset_email": DateTime.timestamp()
-      }).timeout(Duration(seconds: 5));
-    });
-    
-    return error;
-  }
+    if (error == null) {
+      await RateLimits.PASSWORD_RESET_EMAIL.setTimestamp(email);
+    }
 
-  /// Attempts to send user a password reset email, shows any relevant errors.
-  /// 
-  /// Some errors are not shown, to prevent an email enumeration attack.
-  Future<ErrorCode?> forgotPassword(Logger log, String email) async {
-    ErrorCode? error;
-    
-    // we check if the account exists and if a password reset wasn't already sent recently
-    // using afterError instead of error allows us to set error inside the firebaseErrorHandler()
-    ErrorCode? afterError = await firebaseErrorHandler(log, () async {
-      // Get user doc, check it exists, and send email if at least an hour has passed since the last password reset
-      DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
-      await userDocRef.get().then((DocumentSnapshot userDoc) async {
-        if (userDoc.exists) { // we only do anything if the given email actually exists
-          int minutesSinceLastPasswordResetEmail = DateTime.timestamp().difference(userDoc["last_password_reset_email"].toDate()).inMinutes;
-          if (minutesSinceLastPasswordResetEmail >= 60 && mounted) {
-            error = await sendPasswordResetEmail(email);
-          }
-        }
-      }).timeout(Duration(seconds: 5));
-    });
-    error ??= afterError;
+    if (error == null && mounted) {
+      showToast(
+        context, 
+        "If this account exists, then a password reset email has been sent.",
+        Duration(seconds: 5),
+      );
+    }
+    else if (error == RateLimits.PASSWORD_RESET_EMAIL.error && mounted) {
+      showToast(
+        context, 
+        RateLimits.PASSWORD_RESET_EMAIL.error.errorText,
+        Duration(seconds: 5),
+      ); 
+    }
+    else if (mounted) {
+      // set the errors for the email and password fields
+      ErrorCode? newEmailError, newPasswordError;
+      (newEmailError, newPasswordError) = errorsForFields(error);
+      loginFormKey.currentState!.setError(emailField.id, newEmailError);
+      loginFormKey.currentState!.setError(passwordField.id, newPasswordError);      
+    }
 
-    return error;
+    hideLoadingIcon();
   }
 
   /// Attempts to send a user a verification email (if one has not been sent too recently.)
   Future<ErrorCode?> sendEmailVerification(User user) async {
     final log = Logger("sendEmailVerification() in login_page.dart");
-    ErrorCode? error;
-
-    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(user.email);
-    ErrorCode? afterError = await firebaseErrorHandler(log, () async {
-      await userDocRef.get().then((DocumentSnapshot userDoc) async {
-        int hoursSinceLastVerificationEmail = DateTime.timestamp().difference(userDoc["last_verification_email"].toDate()).inHours;
-        if (hoursSinceLastVerificationEmail >= 72) {
-          // send the verification email through firebase auth
-          error = await firebaseErrorHandler(log, () async {
-            await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));      
-          });
-
-          // set new verification email timestamp
-          error ??= await firebaseErrorHandler(log, () async {
-            await userDocRef.update({
-              "last_verification_email": DateTime.timestamp()
-            }).timeout(Duration(seconds: 5));
-          });
-        }
-        else {
-          error = ErrorCodes.VERIFICATION_EMAIL_SENT_RECENTLY;
-        }
-      }).timeout(Duration(seconds: 5));
+    ErrorCode? error = await RateLimits.VERIFICATION_EMAIL.testCooldown(user.email!);
+    error ??= await firebaseErrorHandler(log, () async {
+      await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));
     });
-    error ??= afterError;
+    if (error == null) {
+      await RateLimits.VERIFICATION_EMAIL.setTimestamp(user.email!);
+    }
 
     return error;
   }
@@ -101,8 +80,6 @@ class _LoginPageState extends State<LoginPage>{
   /// If user successfully logs in but is not verified, then a verification email is sent
   /// if another wasn't sent too recently.
   Future<void> login(String email, String password) async {
-    // no fixedTimeFunc is needed since login takes same amount of time for incorrect vs correct emails
-
     final log = Logger("login() in login_page.dart");
     showLoadingIcon();
 
@@ -125,8 +102,8 @@ class _LoginPageState extends State<LoginPage>{
       await FirebaseAnalytics.instance.logLogin().timeout(Duration(seconds: 5));
     });
     
-    // if an unverified user logged in, then tell them they're not verified and send verification
-    if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
+    // if an unverified user logged in without errors, then tell them they're not verified and send verification
+    if (newEmailError == null && newPasswordError == null && FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
       newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
       ErrorCode? verificationError = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
 
@@ -175,30 +152,7 @@ class _LoginPageState extends State<LoginPage>{
         () => throttledFunc(2000, () async {
           loginFormKey.currentState!.removeErrors();
           if (loginFormKey.currentState!.validate(emailField.id)) {
-            showLoadingIcon();
-            
-            final log = Logger("forgotPassword() in login_page.dart");
-            ErrorCode? error = await fixedTimeFunc(
-              log, 
-              () async => await forgotPassword(log, loginFormKey.currentState!.text(emailField.id))
-            );
-
-            // if no errors occurred, show success toast
-            if (error == null && context.mounted) {
-              showToast(
-                context, 
-                "If this account exists, and a password reset didn't take place within the last hour, then a password reset email has been sent.",
-                Duration(seconds: 5),
-              );
-            }
-
-            // set the errors for the email and password fields
-            ErrorCode? newEmailError, newPasswordError;
-            (newEmailError, newPasswordError) = errorsForFields(error);
-            loginFormKey.currentState!.setError(emailField.id, newEmailError);
-            loginFormKey.currentState!.setError(passwordField.id, newPasswordError);
-
-            hideLoadingIcon();
+            await forgotPassword(loginFormKey.currentState!.text(emailField.id));
           }
         })
       ),

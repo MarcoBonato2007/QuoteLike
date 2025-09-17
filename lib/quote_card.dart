@@ -4,9 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotebook/constants.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/theme_settings.dart';
+import 'package:quotelike/constants.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/rate_limiting.dart';
 
 class QuoteCard extends StatefulWidget {
   final String id;
@@ -37,16 +38,17 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     DocumentReference quoteDocRef = FirebaseFirestore.instance.collection("quotes").doc(widget.id);
     DocumentReference likeDocRef = FirebaseFirestore.instance // this doc exists if the user liked this quote
       .collection("users")
-      .doc(FirebaseAuth.instance.currentUser!.email)
+      .doc(FirebaseAuth.instance.currentUser!.uid)
       .collection("liked_quotes")
     .doc(widget.id);
 
     ErrorCode? error = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
         final likeDocSnapshot = await transaction.get(likeDocRef);
+        final quoteDocSnapshot = await transaction.get(quoteDocRef);
         transaction.update( // update the likes on the quote doc
           quoteDocRef, 
-          {"likes": widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0)}
+          {"likes": quoteDocSnapshot["likes"] + (userLikedQuote ? 1 : -1)}
         );
         if (likeDocSnapshot.exists) { // create/delete the liked quote doc
           transaction.delete(likeDocRef);

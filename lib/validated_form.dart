@@ -1,11 +1,11 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:quotebook/constants.dart';
+import 'package:quotelike/constants.dart';
 
 /// The user uses this to input the properties of the forms they want to create.
 /// 
 /// The id doubles as the hint text. 
-/// Note that this means no two widgets can have the same hint text.
+/// Note that this means no two fields can have the same hint text.
 class Field {
   final String id;
   final Icon prefixIcon;

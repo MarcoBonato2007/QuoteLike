@@ -1,13 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/standard_widgets.dart';
-import 'package:quotebook/theme_settings.dart';
-import 'package:quotebook/validated_form.dart';
+import 'package:quotelike/constants.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/standard_widgets.dart';
+import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/validated_form.dart';
+import 'package:quotelike/rate_limiting.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -22,39 +22,17 @@ class _SignupPageState extends State<SignupPage>{
   late Field passwordField;
   late Field passwordConfirmField;
 
-  /// Creates a new doc for a new user in the firestore database (users collection)
-  Future<ErrorCode?> createUserDoc(String email) async {
-    final log = Logger("createUserDoc() in signup_page.dart");
-
-    // Create a new user doc in the firestore database
-    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(email);
-    DocumentReference placeholderDocRef = userDocRef.collection("liked_quotes").doc("placeholder");
-    Map<String, dynamic> userDocData = {
-      "last_verification_email": DateTime(2000), // jan 1st 2000 represents never
-      "last_password_reset_email": DateTime(2000),
-      "last_quote_suggestion": DateTime(2000)
-    };
-
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
-        transaction.set(userDocRef, userDocData);
-        Map<String, dynamic> newData = {}; // this is used to prevent a dumb firebase error 
-        transaction.set(placeholderDocRef, newData);
-      }).timeout(Duration(seconds: 5));  
-    });
-    
-    return error;
-  }
-
   /// Attempts to create a user with the given details.
-  /// 
-  /// The user is not made aware if they are signing up an already existing user.
-  /// This is to prevent an email enumeration attack.
-  Future<ErrorCode?> signup(Logger log, String email, String password) async {
-    // Attempt to signup the user and get the new user's credential (or get errors)
-    UserCredential? newUserCredential;
+  Future<void> signup(String email, String password) async {
+    showLoadingIcon();
+    ErrorCode? newEmailError;
+    ErrorCode? newPasswordError;
+
+    final log = Logger("signup() in signup_page.dart");
+
+    // Create the user in firebase auth
     ErrorCode? error = await firebaseErrorHandler(log, () async {
-      newUserCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password
       ).timeout(Duration(seconds: 5));
@@ -66,10 +44,25 @@ class _SignupPageState extends State<SignupPage>{
       await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
     });
 
-    // If a new user has been created successfully, then create their doc in the database
-    error ??= await createUserDoc(newUserCredential!.user!.email!);
+    if ((error == null || error == ErrorCodes.EMAIL_ALREADY_IN_USE) && mounted) {
+      Navigator.of(context).pop(); // return to login page
+      showToast(
+        context,
+        error == null ? "Sign up successful": "Account already exists. Please log in.", 
+        Duration(seconds: 3),
+      );        
+    }
+    else {
+      // set error messages
+      (newEmailError, newPasswordError) = errorsForFields(error);
+      signupFormKey.currentState!.setError(emailField.id, newEmailError);
+      signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
+      if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
+        signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
+      }      
+    }
 
-    return error;
+    hideLoadingIcon();
   }
 
   @override
@@ -138,37 +131,10 @@ class _SignupPageState extends State<SignupPage>{
       "Sign up",
       () => throttledFunc(2000, () async {
         if (signupFormKey.currentState!.validateAll()) {
-          showLoadingIcon();
-          ErrorCode? newEmailError;
-          ErrorCode? newPasswordError;
-
-          final log = Logger("signup() in signup_page.dart");
-          ErrorCode? error = await fixedTimeFunc(log, () async {
-            return await signup(
-              log,
-              signupFormKey.currentState!.text(emailField.id), 
-              signupFormKey.currentState!.text(passwordField.id), 
-            );
-          });
-
-          (newEmailError, newPasswordError) = errorsForFields(error);
-          if (newEmailError == null && newPasswordError == null && context.mounted) {
-            Navigator.of(context).pop(); // return to login page
-            showToast(
-              context,
-              "Sign up successful or account already exists.", 
-              Duration(seconds: 3),
-            );        
-          }
-
-          // set error messages
-          signupFormKey.currentState!.setError(emailField.id, newEmailError);
-          signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
-          if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-            signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
-          }
-
-          hideLoadingIcon();
+          await signup(
+            signupFormKey.currentState!.text(emailField.id), 
+            signupFormKey.currentState!.text(passwordField.id), 
+          );
         }      
       }),
     );

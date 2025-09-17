@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
+import 'package:quotelike/constants.dart';
 
 // This file contains global functions used in various files
 
@@ -43,10 +43,9 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.INVALID_EMAIL;
     }
-    else if (e.code == "email-already-in-use") { // for signing up
+    else if (e.code == "email-already-in-use") {
       error = ErrorCodes.EMAIL_ALREADY_IN_USE;
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      // Ignore (prevents email enumeration attack)
     }
     else if (e.code == "too-many-requests") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
@@ -118,54 +117,19 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
 }
 
 /// convert an error from firebaseErrorHandler() into errors for an email and password field
-/// 
-/// Email already in use is is ignored to prevent an enumeration attack
 (ErrorCode?, ErrorCode?) errorsForFields(ErrorCode? error) {
   ErrorCode? emailError, passwordError;
   
   if (error == ErrorCodes.INVALID_EMAIL || error == ErrorCodes.EMAIL_NOT_VERIFIED) {
-    emailError = error;
+    emailError = error; // in this case, only the email field gets an error
   }
-  else if (error != null && error != ErrorCodes.EMAIL_ALREADY_IN_USE) {
+  else if (error != null) {
+    // otherwise, the email field is highlighted and error is shown in password filed
     emailError = ErrorCodes.HIGHLIGHT_RED;
     passwordError = error;
   }
 
   return (emailError, passwordError);
-}
-
-DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
-/// Create a function that can only be called throttleTimeMs milliseconds from the last time it was called
-void throttledFunc(int throttleTimeMs, Function() func) async {
-  if (DateTime.timestamp().difference(lastAction).inMilliseconds >= throttleTimeMs) {
-    await func();
-    lastAction = DateTime.timestamp();
-  }
-}
-
-/// Executes a function that takes at least the duration to execute every time, even if it finishes early.
-/// 
-/// This is usually used to prevent an email enumeration attack (in signup and forgot password)
-Future<ErrorCode?> fixedTimeFunc(Logger log, Future<ErrorCode?> Function() func) async {
-  final stopwatch = Stopwatch();
-  ErrorCode? error;
-  stopwatch.start();
-
-  try {
-    error = await func().timeout(Duration(seconds: 5));
-  }
-  on TimeoutException catch (e, stackTrace) {
-    log.info("${log.name}: Firebase timeout caught error.", e, stackTrace);
-    error = ErrorCodes.TIMEOUT;
-  }
-
-  stopwatch.stop();
-  final stopwatchDuration = Duration(milliseconds: stopwatch.elapsedMilliseconds);
-  if (stopwatchDuration.compareTo(Duration(seconds: 5)) < 0) {
-    await Future.delayed(Duration(seconds: 5) - stopwatchDuration);
-  }
-
-  return error;
 }
 
 /// Shows a popup message on the bottom of the screen
