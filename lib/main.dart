@@ -1,24 +1,26 @@
 import 'dart:ui';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/login_page.dart';
-import 'package:quotebook/main_page.dart';
-import 'package:quotebook/theme_settings.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/login_page.dart';
+import 'package:quotelike/main_page.dart';
+import 'package:quotelike/theme_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'firebase_options.dart';
-
-// com.bonato.quotebook
+import 'package:quotelike/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug
+  );
   
   await firebaseErrorHandler(Logger("Logging app open"), useCrashlytics: true, () async {
     await FirebaseAnalytics.instance.logAppOpen();
@@ -109,31 +111,40 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish
-  // think how to fix data integrity issues when combining auth and firestore. Do they need fixing?
-    // Think of possible issues that could arise (e.g. non-existing user doc, non-existing user in auth, etc.)
+// Polish    
+  // completely revamp the github (clone it and replace everything)
+    // check that the services and firebase files is NOT being uploaded BEFORE doing it
+  // update your readme. Publicly show security rules and db structure.
+    // Also mention how to setup (e.g. settings, app check, etc.)
+    // Mention how to set up debug mode
+
+// ---------------------------------------------------------
+
+  // allow changing emails
+  // add readmore package for long quotes
+
+  // add privacy policy acceptance on signup
+    // Search the standards for adding this
 
   // add folders and categorize the files
   // add triple slash comments to EVERY function, class, important variable
-
-  // fix not seeing sign up events in analytics
-
-  // ensure safety of api keys and such. Check nothing sensitive on github.
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // test losing network connection at random times, how does the program react?
-  // USe leading underscore (_) for best practice, see where you're supposed to use it
+  // Use leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
   // add more comments
-  // research and make good firebase security rules
   // check style and code consistency
   // add a lot of initial quotes
+  // change the icon (a quote with a heart), use that one package
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
-  // research common security issues, ask chatgpt, try to find 
   // fix the failed to get service from broker error
-  // add firebase app check
   // add the right github license (GNU GPLv3)
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
-  // get better logo, remember to run the flutter launcher icons package
-  // make it from scratch on a diff firebase project, have only this on github
-  // see if u can add cloud functions (if useful) by linking firestore to an acc with no money inside
+  // fix failed to get service from broker error
+
+  // Update the readme (include info on how to get started)
+  // Check https://docs.flutter.dev/deployment/android
+  // change the appcheck to AndroidProvider.playIntegrity
+  // use --obfuscate and --split-debug when building to make it harder to reverse engineer
+  // Launch it and test there. Really try to break it.

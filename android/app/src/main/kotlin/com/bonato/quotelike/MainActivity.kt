@@ -1,4 +1,4 @@
-package com.bonato.quotebook
+package com.bonato.quotelike
 
 import io.flutter.embedding.android.FlutterActivity
 

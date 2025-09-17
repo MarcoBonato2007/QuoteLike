@@ -1,15 +1,13 @@
-// on delete user, make sure to delete their document entry in the firestore
-
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotebook/constants.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/standard_widgets.dart';
-import 'package:quotebook/theme_settings.dart';
+import 'package:quotelike/constants.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/rate_limiting.dart';
+import 'package:quotelike/standard_widgets.dart';
+import 'package:quotelike/theme_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -21,17 +19,36 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   /// deletes currently logged in user, returns an error code
   Future<ErrorCode?> deleteUser(BuildContext context) async {
+    final log = Logger("deleteUser() in settings_page.dart");
     showLoadingIcon();
 
-    final log = Logger("deleteUser() in settings_page.dart");
+    // Clear verification and password reset email timestamps
+    // So that the user can recreate this account if they want to
+    await RateLimits.VERIFICATION_EMAIL.setTimestamp(FirebaseAuth.instance.currentUser!.email!, reset: true);
+    await RateLimits.PASSWORD_RESET_EMAIL.setTimestamp(FirebaseAuth.instance.currentUser!.email!, reset: true);
 
-    // Remove user entry from firebase
-    DocumentReference userDocRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.email);
+    // Delete all documents in liked quotes subcollection, so as to delete the user doc
+    // This also decrements the like count for all quotes the user has liked
+    CollectionReference likedQuotesRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.uid).collection("liked_quotes");
+    CollectionReference quoteCollectionRef = FirebaseFirestore.instance.collection("quotes");
     ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await userDocRef.delete().timeout(Duration(seconds: 5));
+      await likedQuotesRef.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
+        for (DocumentSnapshot doc in querySnapshot.docs) { // for every quote the user has liked,
+          await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
+            final quoteDocRef = quoteCollectionRef.doc(doc.id);
+            final quoteDocSnapshot = await transaction.get(quoteDocRef);
+            transaction.delete(likedQuotesRef.doc(doc.id)); // delete the liked quote doc
+            transaction.update( // decrement the number of likes on the document for the quote
+              quoteDocRef, 
+              {"likes": quoteDocSnapshot["likes"] - 1}
+            );
+          }).timeout(Duration(seconds: 5));
+        }
+      }).timeout(Duration(seconds: 5));
     });
+
     error ??= await firebaseErrorHandler(log, () async {
-      // This also signs out the user
+      // Delete the user from firebase auth (this also signs out the user)
       await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
     });
 

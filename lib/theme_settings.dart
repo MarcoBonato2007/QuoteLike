@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:quotebook/globals.dart';
-import 'package:quotebook/standard_widgets.dart';
+import 'package:quotelike/globals.dart';
+import 'package:quotelike/standard_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A button to swap the theme between light and dark modes
