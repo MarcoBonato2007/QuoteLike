@@ -13,7 +13,7 @@ Email/password login must be enabled in Firebase auth. Please ensure that email 
 ### App check setup
 If you don't want to use app check, remove the package and remove the line  ```await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);```  from main.dart.
 
-Otherwise, please set up app check in the Firebase console. Remember: if you want to launch the project, remember to input the debug token generated (this will show up in the debug console) into your appcheck debug tpkens in the firebase console.
+Otherwise, please set up app check in the Firebase console. Remember: if you want to launch the project, input your debug token (this will show up in the debug console) into your appcheck debug tokens in the firebase console.
 
 ### Firestore setup
 There are only 3 collections: quotes, suggestions and users. 
@@ -58,7 +58,7 @@ service cloud.firestore {
       	request.auth != null 
       	&& request.auth.token.email_verified;
         
-      // allow any logged in, verified user to list max 20 quotes
+      	// allow any logged in, verified user to list max 20 quotes
     	allow list: if 
       	request.auth != null 
       	&& request.auth.token.email_verified
@@ -82,8 +82,8 @@ service cloud.firestore {
     
     // for suggestions, allow creation only if:
     	// Request is made from a logged in and verified user 
-    	// The format is correct (only contains both the author and content fields)
-      // The author or content fields aren't eccessively large
+    	// The format is correct (only contains the author, content and user fields)
+      	// The author or content fields aren't excessively large
   	match /suggestions/{suggestionDoc} {
     	allow create: if 
       	request.auth != null 
@@ -101,43 +101,42 @@ service cloud.firestore {
   	match /users/{userDoc} {   
     	// Allow creating a user document only if:
     		// The current user is logged in and verified
-      	// The document is being created for the currently logged in user
-      	// There are no fields being added
+      		// The document is being created for the currently logged in user
+      		// There are no fields being added
     	allow create: if
       	request.auth != null
         && request.auth.token.email_verified
         && userDoc == request.auth.uid
         && request.resource.data.keys().size() == 0;
 			
-      // For the liked quotes subcollection
     	match /liked_quotes/{likedQuoteDoc} {        
-        // Allow listing liked quotes only if:
-        	// The current user is logged in and verified
-          // The current user is reading their own liked quotes
-      	allow read: if 
-        	request.auth != null
-          && request.auth.token.email_verified
-          && userDoc == request.auth.uid;
-        
-      	// Allow create only if:
-        	// The current user is logged in and verified
-          // The current user is updating their own liked quotes
-          // The liked quote doc is the correct format (empty, no fields)
-          // The id of the document represents an existing quote
-      	allow create: if 
-        	request.auth != null
-          && request.auth.token.email_verified
-          && userDoc == request.auth.uid
-          && request.resource.data.keys().size() == 0
-          && exists(/databases/$(database)/documents/quotes/$(request.resource.id));
-          
-        // Allow delete only if:
-        	// The current user is logged in and verified
-          // The current user is updating their own liked quotes
-      	allow delete: if 
-        	request.auth != null
-          && request.auth.token.email_verified
-          && userDoc == request.auth.uid;
+	        // Allow listing liked quotes only if:
+	        	// The current user is logged in and verified
+	          	// The current user is reading their own liked quotes
+	      	allow read: if 
+	        	request.auth != null
+	          && request.auth.token.email_verified
+	          && userDoc == request.auth.uid;
+	        
+	      	// Allow create only if:
+	        	// The current user is logged in and verified
+	          	// The current user is updating their own liked quotes
+	          	// The liked quote doc is the correct format (empty, no fields)
+	          	// The id of the document represents an existing quote
+	      	allow create: if 
+	        	request.auth != null
+	          && request.auth.token.email_verified
+	          && userDoc == request.auth.uid
+	          && request.resource.data.keys().size() == 0
+	          && exists(/databases/$(database)/documents/quotes/$(request.resource.id));
+	          
+	        // Allow delete only if:
+	        	// The current user is logged in and verified
+	          	// The current user is updating their own liked quotes
+	      	allow delete: if 
+	        	request.auth != null
+	          && request.auth.token.email_verified
+	          && userDoc == request.auth.uid;
       }
     }
   }
