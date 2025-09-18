@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/dropdown.dart';
-import 'package:quotelike/globals.dart';
-import 'package:quotelike/quote_card.dart';
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/widgets/dropdown.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/quote_card.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});

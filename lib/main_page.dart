@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:quotelike/explore_page.dart';
 import 'package:quotelike/suggestion_creation_page.dart';
 import 'package:quotelike/settings_page.dart';
-import 'package:quotelike/theme_settings.dart';
-import 'package:quotelike/rate_limiting.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

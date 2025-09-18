@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/globals.dart';
-import 'package:quotelike/rate_limiting.dart';
-import 'package:quotelike/standard_widgets.dart';
-import 'package:quotelike/validated_form.dart';
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/widgets/standard_widgets.dart';
+import 'package:quotelike/widgets/validated_form.dart';
 
 class SuggestionCreationPage extends StatefulWidget {
   const SuggestionCreationPage({super.key});
@@ -23,7 +23,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
 
   Future<ErrorCode?> addSuggestion() async {
     final log = Logger("addSuggestion() in quote_creation_page.dart");
-    ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.email!);
+    ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.uid);
 
     error ??= await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance.collection("suggestions").add({
@@ -34,7 +34,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
     });
 
     if (error == null) {
-      await RateLimits.QUOTE_SUGGESTION.setTimestamp(FirebaseAuth.instance.currentUser!.email!);
+      await RateLimits.QUOTE_SUGGESTION.setTimestamp(FirebaseAuth.instance.currentUser!.uid);
     }
 
     return error;

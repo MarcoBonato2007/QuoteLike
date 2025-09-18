@@ -1,13 +1,11 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/globals.dart';
-import 'package:quotelike/standard_widgets.dart';
-import 'package:quotelike/theme_settings.dart';
-import 'package:quotelike/validated_form.dart';
-import 'package:quotelike/rate_limiting.dart';
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/standard_widgets.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/widgets/validated_form.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -18,31 +16,13 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage>{
   final signupFormKey = GlobalKey<ValidatedFormState>();
-  Field emailField = EmailField();
+  Field emailField = EmailField("Email");
   late Field passwordField;
   late Field passwordConfirmField;
 
-  /// Attempts to create a user with the given details.
+  /// This is used instead of auth_functions.signup()
   Future<void> signup(String email, String password) async {
-    showLoadingIcon();
-    ErrorCode? newEmailError;
-    ErrorCode? newPasswordError;
-
-    final log = Logger("signup() in signup_page.dart");
-
-    // Create the user in firebase auth
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password
-      ).timeout(Duration(seconds: 5));
-    });
-
-    // log the event in analytics
-    // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
-    await firebaseErrorHandler(log, useCrashlytics: true, () async {
-      await FirebaseAnalytics.instance.logSignUp(signUpMethod: "Email & Password").timeout(Duration(seconds: 5));
-    });
+    ErrorCode? error = await auth_functions.signup(email, password);
 
     if ((error == null || error == ErrorCodes.EMAIL_ALREADY_IN_USE) && mounted) {
       Navigator.of(context).pop(); // return to login page
@@ -54,6 +34,8 @@ class _SignupPageState extends State<SignupPage>{
     }
     else {
       // set error messages
+      ErrorCode? newEmailError;
+      ErrorCode? newPasswordError;
       (newEmailError, newPasswordError) = errorsForFields(error);
       signupFormKey.currentState!.setError(emailField.id, newEmailError);
       signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
@@ -61,8 +43,6 @@ class _SignupPageState extends State<SignupPage>{
         signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
       }      
     }
-
-    hideLoadingIcon();
   }
 
   @override

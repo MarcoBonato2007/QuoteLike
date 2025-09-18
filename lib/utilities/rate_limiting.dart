@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:quotelike/constants.dart';
+import 'package:quotelike/utilities/constants.dart';
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
 /// Create a function that can only be called throttleTimeMs milliseconds from the last time it was called
@@ -30,7 +30,7 @@ class RateLimit {
   }
 
   /// Returns an error if the cooldown hasn't expired yet
-  Future<ErrorCode?> testCooldown(String email) async {
+  Future<ErrorCode?> testCooldown(String identifier) async {
     String? timestampsJsonString = await storage.read(key: id);
     if (timestampsJsonString == null) {
       timestampsJsonString = jsonEncode({});
@@ -38,14 +38,13 @@ class RateLimit {
     }
 
     Map<String, dynamic> timestampsJson = jsonDecode(timestampsJsonString);
-
-    if (timestampsJson[email] == null) {
+    if (timestampsJson[identifier] == null) {
       // if new email encountered, add it
-      await setTimestamp(email, reset: true);
-      timestampsJson[email] = DateTime(0).toString();
+      await setTimestamp(identifier, reset: true);
+      timestampsJson[identifier] = DateTime(0).toString();
     }
 
-    if (DateTime.now().difference(DateTime.parse(timestampsJson[email]!)) < cooldown) {
+    if (DateTime.now().difference(DateTime.parse(timestampsJson[identifier]!)) < cooldown) {
       return error;
     }
     else {
@@ -53,14 +52,14 @@ class RateLimit {
     }
   }
 
-  Future<void> setTimestamp(String email, {bool reset = false}) async {
+  Future<void> setTimestamp(String identifier, {bool reset = false}) async {
     String? timestampsJsonString = await storage.read(key: id);
     if (timestampsJsonString == null) {
       throw Exception(); // should never be null
     }
 
     Map<String, dynamic> timestampsJson = jsonDecode(timestampsJsonString);
-    timestampsJson[email] = reset ? DateTime(0).toString() : DateTime.now().toString();
+    timestampsJson[identifier] = reset ? DateTime(0).toString() : DateTime.now().toString();
 
     await storage.write(key: id, value: jsonEncode(timestampsJson));
   }
@@ -77,6 +76,11 @@ class RateLimits {
     "Verification email", 
     Duration(hours: 70),
     ErrorCode("A verification email was already sent recently. Check your inbox and spam folder.")
+  );
+  static RateLimit EMAIL_CHANGE = RateLimit(
+    "Changing email", 
+    Duration(hours: 23),
+    ErrorCode("An email change was already requested in the past day.")
   );
   static RateLimit QUOTE_SUGGESTION = RateLimit(
     "Quote suggestion", 

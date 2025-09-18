@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
+import 'package:quotelike/utilities/constants.dart';
 
 // This file contains global functions used in various files
 
@@ -59,7 +59,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.NETWORK_ERROR;
     }
-    else if (e.code == "requires-recent-login") {
+    else if (e.code == "requires-recent-login" || e.code == "user-token-expired") {
       log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
       error = ErrorCodes.REQUIRES_RECENT_LOGIN;
     }

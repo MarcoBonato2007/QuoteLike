@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/globals.dart';
-import 'package:quotelike/rate_limiting.dart';
-import 'package:quotelike/standard_widgets.dart';
-import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/standard_widgets.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/widgets/validated_form.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -17,45 +16,88 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  /// deletes currently logged in user, returns an error code
-  Future<ErrorCode?> deleteUser(BuildContext context) async {
-    final log = Logger("deleteUser() in settings_page.dart");
-    showLoadingIcon();
+  final emailFormKey = GlobalKey<ValidatedFormState>(); // used when inputting an email to change to
+  final emailField = EmailField("New email");
 
-    // Clear verification and password reset email timestamps
-    // So that the user can recreate this account if they want to
-    await RateLimits.VERIFICATION_EMAIL.setTimestamp(FirebaseAuth.instance.currentUser!.email!, reset: true);
-    await RateLimits.PASSWORD_RESET_EMAIL.setTimestamp(FirebaseAuth.instance.currentUser!.email!, reset: true);
+  /// This is used instead of auth_functions.signout()
+  Future<void> signout() async {
+    ErrorCode? error = await auth_functions.signout();
 
-    // Delete all documents in liked quotes subcollection, so as to delete the user doc
-    // This also decrements the like count for all quotes the user has liked
-    CollectionReference likedQuotesRef = FirebaseFirestore.instance.collection("users").doc(FirebaseAuth.instance.currentUser!.uid).collection("liked_quotes");
-    CollectionReference quoteCollectionRef = FirebaseFirestore.instance.collection("quotes");
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await likedQuotesRef.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
-        for (DocumentSnapshot doc in querySnapshot.docs) { // for every quote the user has liked,
-          await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
-            final quoteDocRef = quoteCollectionRef.doc(doc.id);
-            final quoteDocSnapshot = await transaction.get(quoteDocRef);
-            transaction.delete(likedQuotesRef.doc(doc.id)); // delete the liked quote doc
-            transaction.update( // decrement the number of likes on the document for the quote
-              quoteDocRef, 
-              {"likes": quoteDocSnapshot["likes"] - 1}
-            );
-          }).timeout(Duration(seconds: 5));
-        }
-      }).timeout(Duration(seconds: 5));
-    });
+    Navigator.of(navigatorKey.currentContext!).pop(); // remove confirmation dialog
 
-    error ??= await firebaseErrorHandler(log, () async {
-      // Delete the user from firebase auth (this also signs out the user)
-      await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
-    });
+    if (error != null) {
+      showToast(navigatorKey.currentContext!, error.errorText, Duration(seconds: 3));
+    }     
+  }
 
-    hideLoadingIcon();
+  /// This is used instead of auth_functions.deleteUser()
+  Future<void> deleteUser() async {
+    ErrorCode? error = await auth_functions.deleteUser();
+
     Navigator.of(navigatorKey.currentContext!).pop(); // remove confirmation dialog     
 
-    return error;
+    if (error != null) {
+      showToast(
+        navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
+        ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
+        Duration(seconds: 5)
+      );
+    }
+    else {
+      showToast(
+        navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
+        "Account deleted successfully", 
+        Duration(seconds: 5)
+      );  
+    }
+  }
+
+  /// This is used instead of auth_functions.forgotPassword()
+  Future<void> forgotPassword() async {
+    ErrorCode? error = await auth_functions.forgotPassword(FirebaseAuth.instance.currentUser!.email!);
+
+    if (error == null && mounted) {
+      showToast(
+        context, 
+        "A password reset email has been sent.",
+        Duration(seconds: 5),
+      );
+    }
+    else if (error != null && mounted) {
+      showToast(
+        context, 
+        error.errorText,
+        Duration(seconds: 5),
+      ); 
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop(); // remove confirmation dialog
+    }
+  }
+
+  /// This is used instead of auth_functions.changeEmail()
+  Future<void> changeEmail(String newEmail) async {
+    ErrorCode? error = await auth_functions.changeEmail(newEmail);
+
+    if (error == null && mounted) {
+      showToast(
+        context, 
+        "Check the inbox of $newEmail for a verification email. You may need to log out and back in.",
+        Duration(seconds: 5),
+      );
+    }
+    else if (error != null && mounted) {
+      showToast(
+        context, 
+        error.errorText,
+        Duration(seconds: 5),
+      ); 
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop(); // remove confirmation dialog
+    }
   }
 
   @override
@@ -75,6 +117,85 @@ class _SettingsPageState extends State<SettingsPage> {
           )
         ),
         SizedBox(height: 5),
+        StandardSettingsButton("Change email", Icon(Icons.email), () => showDialog(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            contentPadding: EdgeInsets.only(left: 24, right: 24, top: 24),
+            actionsPadding: EdgeInsets.only(left: 24, right: 24, bottom: 24),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Confirm email change",
+                  textAlign: TextAlign.center
+                ),
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style,
+                    children: const <TextSpan>[
+                      TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      TextSpan(text: 'Maximum 1 email change / day. Make sure the email is spelled correctly.'),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 15),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: ValidatedForm(
+                    key: emailFormKey,
+                    [emailField],
+                  ),
+                )
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              BackButton(),
+              StandardElevatedButton(
+                "Change email", 
+                () async {
+                  emailFormKey.currentState!.removeErrors();
+                  if (emailFormKey.currentState!.validate(emailField.id)) {
+                    await changeEmail(emailFormKey.currentState!.text(emailField.id));
+                  }
+                }
+              )
+            ]
+          )
+        )),
+        StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showDialog(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Confirm password reset",
+                  textAlign: TextAlign.center
+                ),
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style,
+                    children: const <TextSpan>[
+                      TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      TextSpan(text: 'Maximum once per day'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              BackButton(),
+              StandardElevatedButton(
+                "Reset password", 
+                () async => await forgotPassword()
+              )
+            ]
+          )
+        )),
         StandardSettingsButton("Log out", Icon(Icons.logout), () => showDialog( // show confirmation dialog
           context: context,
           builder: (BuildContext context) => AlertDialog(
@@ -85,20 +206,9 @@ class _SettingsPageState extends State<SettingsPage> {
             actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
               BackButton(),
-              StandardElevatedButton( // add back button
+              StandardElevatedButton(
                 "Log out", 
-                () async {
-                  final log = Logger("Log out button in settings_page.dart");
-                  showLoadingIcon();
-                  ErrorCode? error = await firebaseErrorHandler(log, doNetworkCheck: false, () async {
-                    await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
-                  });
-                  hideLoadingIcon();
-                  Navigator.of(navigatorKey.currentContext!).pop(); // remove confirmation dialog
-                  if (error != null) {
-                    showToast(navigatorKey.currentContext!, error.errorText, Duration(seconds: 3));
-                  }                  
-                }
+                () async => await signout()
               )
             ]
           )
@@ -115,16 +225,7 @@ class _SettingsPageState extends State<SettingsPage> {
               BackButton(),
               StandardElevatedButton( // add back button
                 "Delete account", 
-                () async {
-                  ErrorCode? error = await deleteUser(context);
-                  if (error != null) {
-                    showToast(
-                      navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
-                      ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
-                      Duration(seconds: 5)
-                    );
-                  }
-                }
+                () async => await deleteUser()
               )
             ]
           )
