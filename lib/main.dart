@@ -8,12 +8,12 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotelike/globals.dart';
+import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/login_page.dart';
 import 'package:quotelike/main_page.dart';
-import 'package:quotelike/theme_settings.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:quotelike/firebase_options.dart';
+import 'package:quotelike/utilities/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,13 +110,22 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish    
-  // allow changing emails
+  // TODO: look at this problem
+    // user signs up with email 1
+    // changes email to email 2
+    // deletes account
+    // tries to sign up with email 1 again
+    // this will fail (it should remove email 1 timestamps even with email 2 deletion)
+
   // add readmore package for long quotes
 
   // add privacy policy acceptance on signup
     // Search the standards for adding this
 
-  // add folders and categorize the files
+  // CONSIDER changing timestamps to work through firebase (get and create and update access only, by email)
+  // fix failed to get service from broker error
+
+  // DRY
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
@@ -131,7 +140,6 @@ class _MyHomePageState extends State<MyHomePage> {
   // fix the failed to get service from broker error
   // add the right github license (GNU GPLv3)
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
-  // fix failed to get service from broker error
 
   // Update the readme (include info on how to get started)
   // Check https://docs.flutter.dev/deployment/android

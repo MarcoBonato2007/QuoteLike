@@ -4,10 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/globals.dart';
-import 'package:quotelike/theme_settings.dart';
-import 'package:quotelike/rate_limiting.dart';
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
 
 class QuoteCard extends StatefulWidget {
   final String id;

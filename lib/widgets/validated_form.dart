@@ -1,6 +1,6 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:quotelike/constants.dart';
+import 'package:quotelike/utilities/constants.dart';
 
 /// The user uses this to input the properties of the forms they want to create.
 /// 
@@ -26,8 +26,8 @@ class Field {
 
 /// The standard field for an email (always the same)
 class EmailField extends Field {
-  EmailField() : super(
-    "Email",
+  EmailField(String hintText) : super(
+    hintText,
     Icon(Icons.email),
     false,
     (String? inputtedValue) {
@@ -111,6 +111,7 @@ class ValidatedFormState extends State<ValidatedForm> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (Field field in widget.fields) 
           Column(
@@ -148,7 +149,7 @@ class ValidatedFormState extends State<ValidatedForm> {
                   : null
                 ),
               ),
-              SizedBox(height: 5) // spacing between fields
+              field.id != widget.fields.last.id ? SizedBox(height: 5) : SizedBox.shrink() // spacing between fields if not last field
             ]
           ),
       ] 

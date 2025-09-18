@@ -1,14 +1,13 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:quotelike/constants.dart';
-import 'package:quotelike/globals.dart';
+import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/signup_page.dart';
-import 'package:quotelike/standard_widgets.dart';
-import 'package:quotelike/theme_settings.dart';
-import 'package:quotelike/validated_form.dart';
-import 'package:quotelike/rate_limiting.dart';
+import 'package:quotelike/widgets/standard_widgets.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/widgets/validated_form.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,21 +19,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage>{
   // The key used to access the form containing the email & password fields
   final loginFormKey = GlobalKey<ValidatedFormState>();
-  Field emailField = EmailField();
+  Field emailField = EmailField("Email");
   late Field passwordField;
-
-  /// Attempts to send user a password reset email, shows any relevant errors.
+  
+  /// This is used instead of auth_functions.forgotPassword()
   Future<void> forgotPassword(String email) async {
-    final log = Logger("forgotPassword() in login_page.dart");
-    showLoadingIcon();
-    
-    ErrorCode? error = await RateLimits.PASSWORD_RESET_EMAIL.testCooldown(email);
-    error ??= await firebaseErrorHandler(log, () async {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email).timeout(Duration(seconds: 5));
-    });
-    if (error == null) {
-      await RateLimits.PASSWORD_RESET_EMAIL.setTimestamp(email);
-    }
+    ErrorCode? error = await auth_functions.forgotPassword(email);
 
     if (error == null && mounted) {
       showToast(
@@ -57,55 +47,20 @@ class _LoginPageState extends State<LoginPage>{
       loginFormKey.currentState!.setError(emailField.id, newEmailError);
       loginFormKey.currentState!.setError(passwordField.id, newPasswordError);      
     }
-
-    hideLoadingIcon();
   }
 
-  /// Attempts to send a user a verification email (if one has not been sent too recently.)
-  Future<ErrorCode?> sendEmailVerification(User user) async {
-    final log = Logger("sendEmailVerification() in login_page.dart");
-    ErrorCode? error = await RateLimits.VERIFICATION_EMAIL.testCooldown(user.email!);
-    error ??= await firebaseErrorHandler(log, () async {
-      await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));
-    });
-    if (error == null) {
-      await RateLimits.VERIFICATION_EMAIL.setTimestamp(user.email!);
-    }
-
-    return error;
-  }
-
-  /// Attempts to sign a user in with the given credentials, shows any relevant errors
-  /// 
-  /// If user successfully logs in but is not verified, then a verification email is sent
-  /// if another wasn't sent too recently.
+  /// This is used instead of auth_functions.login()
   Future<void> login(String email, String password) async {
-    final log = Logger("login() in login_page.dart");
-    showLoadingIcon();
+    ErrorCode? error = await auth_functions.login(email, password);
 
     ErrorCode? newEmailError;
     ErrorCode? newPasswordError;
-
-    // Attempt to log the user in
-    // The sign out before is necessary, since the user may be logged into an unverified account already
-    (newEmailError, newPasswordError) = errorsForFields(await firebaseErrorHandler(log, () async {
-      await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password
-      ).timeout(Duration(seconds: 5));
-    }));
-
-    // log the event in analytics
-    // we don't tell the user about any errors here, since it's non fatal and will be logged anyway
-    await firebaseErrorHandler(log, useCrashlytics: true, () async {
-      await FirebaseAnalytics.instance.logLogin().timeout(Duration(seconds: 5));
-    });
+    (newEmailError, newPasswordError) = errorsForFields(error);
     
     // if an unverified user logged in without errors, then tell them they're not verified and send verification
     if (newEmailError == null && newPasswordError == null && FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
       newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
-      ErrorCode? verificationError = await sendEmailVerification(FirebaseAuth.instance.currentUser!);
+      ErrorCode? verificationError = await auth_functions.sendEmailVerification(FirebaseAuth.instance.currentUser!);
 
       if (verificationError != null && mounted) { // show any errors that came up trying to send email verification
         showToast(
@@ -129,8 +84,6 @@ class _LoginPageState extends State<LoginPage>{
       loginFormKey.currentState!.setError(emailField.id, newEmailError);
       loginFormKey.currentState!.setError(passwordField.id, newPasswordError);     
     }
-
-    hideLoadingIcon(); 
   }
 
   @override
@@ -148,7 +101,7 @@ class _LoginPageState extends State<LoginPage>{
         }
       },
       counter: StandardTextButton(
-        "Forgot password?",
+        "Forgot password? Max 1/hour",
         () => throttledFunc(2000, () async {
           loginFormKey.currentState!.removeErrors();
           if (loginFormKey.currentState!.validate(emailField.id)) {
