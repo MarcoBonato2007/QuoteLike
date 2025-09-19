@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,21 @@ void showLoadingIcon() {
 
 /// Same as Navigator.of(context).pop(), used with showLoadingIcon()
 void hideLoadingIcon() => Navigator.of(navigatorKey.currentContext!).pop();
+
+Future<void> logEvent(String eventName) async {
+  final log = Logger("logCustomevent() in globals.dart");
+
+  // we don't tell the user about any errors here, since it's non fatal and not all that important
+  await firebaseErrorHandler(log, useCrashlytics: true, () async {
+    await FirebaseAnalytics.instance.logEvent(
+      name: eventName, 
+      parameters: {
+        "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
+        "email": FirebaseAuth.instance.currentUser?.email! ?? "null"
+      }
+    ).timeout(Duration(seconds: 5));
+  });
+}
 
 /// try excepts a function using firebase in some way, returns an error message (see constants.dart)
 Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true, bool useCrashlytics = false}) async {
@@ -99,12 +115,13 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     }
   }
 
+  // If useCrashlytics is true, we will report this error to crashlytics (if not done already)
   if (!errorLoggedInCrashlytics && useCrashlytics && error != null) {
     try {
-      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
+      await FirebaseCrashlytics.instance.recordError(
         error,
         null,
-        reason: '${log.name}: Unknown flutter error',
+        reason: log.name,
       );      
     }
     catch (e, stackTrace) {

@@ -1,0 +1,154 @@
+Privacy policy updated as of: 19 September 2025
+
+Introduction
+  QuoteLike is an app where users can view and "like" a list of quotes.
+    This list of quotes is curated by the administrators of the app.
+  Users can also make suggestions for new quotes to be added. This is what is meant by a "suggestion".
+
+  The app is completely free, with no future plans to add monetization.
+
+
+Useful Information
+  All app details can be found on https://github.com/MarcoBonato2007/QuoteLike.
+  This site also explains how to exactly replicate the project.
+
+  Current administrator emails:
+    - marcobonato2007@gmail.com (Owner of the app)
+
+Please note that the Application utilizes third-party services that have their own Terms and Conditions. Below are the links to the Terms and Conditions of the third-party service providers used by the Application:
+- https://www.google.com/analytics/terms/
+- https://firebase.google.com/terms/crashlytics
+- https://cloud.google.com/terms/
+
+
+What data is collected? (exhaustive)
+  Authentication (manual)
+    - Email address of a signed up user
+    - The date a user created their account
+    - The id of users (this can be used to identify their email address)
+    - The last date a user signed in
+    - Whether a user has verified their account
+
+  Events (automatic)
+    All events contain:
+      - The date the event occurred
+      - The email of the currently logged in user (if any)
+      - The country the event occurred in
+      - The type of event (see below)
+
+    Types of events
+      - An email verification email being sent
+      - A password reset email being sent
+      - A user logging in
+      - A user signing up
+      - A user signing out
+      - A user's liked quotes being deleted from the database
+      - A user's account being deleted
+      - A user's email being changed
+      - The app being opened
+      - A user creating a suggestion
+
+  Crash reports (automatic)
+    Information on the device the crash took place on, including (exhaustive):
+      - The operating system the crash took place on (e.g. Android 16)
+      - Whether the device is "rooted"
+      - The name of the device the crash took place on
+      - The current orientation of the device
+      - The amount of free RAM on the device
+      - The amount of free disk space on the device
+    
+    Other
+      - The user id of the currently logged in user (if any).
+      - The date and time the crash occurred
+      - The country the crash occurred in
+      - The version of the app the crash occurred in (e.g. 1.4.2)
+
+  Other (manual)
+    - The quotes liked by a user, consisting of a list of id's of liked quotes.
+    - The suggestions made by a user, containing:
+      - The suggested quote content
+      - The suggested quote author
+      - Their user id
+
+
+Why is the data collected?
+  - Email addresses must be collected to allow users to create accounts
+  - App crash reports are collected to allow for bugs to be fixed
+  - Events are collected to monitor the operation of the app, for reasons such as, but not limited to:
+    - Analyzing how well the app is doing
+    - Analyzing how many users keep using the app
+    - etc.
+  - Liked quotes must be collected to allow users to keep the same liked quotes across devices
+  - Suggestions must be collected so they can be reviewed by an app administrator and possibly added to the list of quotes
+
+
+How is the data viewed, controlled and shared by administrators?
+  Please view a list of current administrators in the "Contact" section (towards the bottom).
+
+  Data will only be shared or viewed by:
+    - The group of administrators
+    - Possibly by third party services used to implement the application. These are:
+      - https://firebase.google.com/
+
+  Through the app "console", an administrator may view only the data specified in the "What data is collected?" section.
+  Passwords are not visible to administrators.
+
+  The app administrator has the ability to perform the following actions on user data:
+    - Reset a user's password (usually done by the user independently)
+    - Disable a user's account (CANNOT be done by the user independently)
+    - Delete a user's account (usually done by the user independently)
+    - Delete from a user's liked quotes (usually done by the user independently)
+    - Add to a user's liked quotes (usually done by the user independently)
+    - Add, remove or modify a quote suggestion made by a user (CANNOT be done by the user independently)
+
+  In what cases will these actions be taken?
+    Resetting a user's password or disabling or deleting their account will be done only if:
+      - The user has requested for this by contacting an administrator via email
+      - Or the administrator believes the account to be toxic or compromised. For example:
+        - The user has sent an email to an administrator saying that their account has been hacked
+        - The user has "jailbroken" the app and is attempting to make malicious database requests
+        - The user is attempting some kind of attack (e.g. DDOS)
+        - Etc: This is up to the administrator's discretion.
+
+    Deleting or adding to a user's liked quotes, will only be done if:
+      - The user has requested for this by contacting an administrator via email
+
+    Approving, removing or modifying a quote suggestion made by them, will be done only if:
+      - The user has requested for this by contacting an administrator via email
+      - An administrator wishes to do so. This is up to each administrator's discretion.
+
+
+User rights
+  Through the app, users can:
+    - Create an account (via email & password)
+    - Sign in to an account
+    - Delete an account they are logged in to
+    - Reset the password for an account
+    - Change the email for an account
+    - Make a quote suggestion for an account
+    - Add to their liked quotes for an account
+
+  But they CANNOT (through the app):
+    - Delete or modify quote suggestions they have submitted
+    - Disable their account
+
+  Users may delete ANY data held about them by contacting an administrator (see last section). For example:
+    - Liked quotes
+    - Suggestions made
+    - Accounts held
+
+  Users may additionally request the following (again by contacting an administrator (see last section)):
+    - A password reset email
+    - An email change email
+    - A verification email  
+    - Changes or additions to liked quotes or suggestions
+  Please note: granting these requests is up to the discretion of the administrators.
+
+
+Contact
+  Please contact an administrator via email.
+  
+  Current administrators & email addresses:
+    - Marco Bonato (Owner): marcobonato2007@gmail.com
+  
+  More administrators may be added in future at the owner's discretion.
