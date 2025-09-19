@@ -94,7 +94,7 @@ service cloud.firestore {
         && request.resource.data.content is string
         && request.resource.data.user is string
         && request.resource.data.author.size() <= 100
-        && request.resource.data.content.size() <= 500
+        && request.resource.data.content.size() <= 250
         && request.resource.data.user.size() <= 128;
     }
     
