@@ -31,6 +31,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
         "author": quoteCreationFormKey.currentState!.text(authorField.id),
         "user": FirebaseAuth.instance.currentUser!.uid
       }).timeout(Duration(seconds: 5));
+      await logEvent("Add suggestion");
     });
 
     if (error == null) {
@@ -50,8 +51,8 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
         if (currentValue == null || currentValue == "") {
           return "Please enter quote content";
         }
-        else if (currentValue.length > 500) {
-          return "Content must be at most 500 characters";
+        else if (currentValue.length > 250) {
+          return "Content must be at most 250 characters";
         }
         else {
           return null;

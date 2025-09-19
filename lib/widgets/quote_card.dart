@@ -8,6 +8,7 @@ import 'package:quotelike/utilities/constants.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:readmore/readmore.dart';
 
 class QuoteCard extends StatefulWidget {
   final String id;
@@ -135,10 +136,12 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
         children: [
           Align(
             alignment: Alignment.centerLeft, 
-            child: Text(
+            child: ReadMoreText(
               '“${widget.quote}”', 
+              trimLength: 100,
               textAlign: TextAlign.start,
               style: TextStyle(fontSize: 20), 
+              moreStyle: TextStyle(color: ColorScheme.of(context).primary)
             )
           ),
           Align(

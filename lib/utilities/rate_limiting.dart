@@ -55,13 +55,17 @@ class RateLimit {
   Future<void> setTimestamp(String identifier, {bool reset = false}) async {
     String? timestampsJsonString = await storage.read(key: id);
     if (timestampsJsonString == null) {
-      throw Exception(); // should never be null
+      throw Exception("Timestamp doesn't exist in setTimestamp()"); // should never happen
     }
 
     Map<String, dynamic> timestampsJson = jsonDecode(timestampsJsonString);
     timestampsJson[identifier] = reset ? DateTime(0).toString() : DateTime.now().toString();
 
     await storage.write(key: id, value: jsonEncode(timestampsJson));
+  }
+
+  Future<void> deleteTimestamp(String identifier) async {
+    await storage.delete(key: identifier);
   }
 
 }

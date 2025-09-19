@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,10 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
-  
-  await firebaseErrorHandler(Logger("Logging app open"), useCrashlytics: true, () async {
-    await FirebaseAnalytics.instance.logAppOpen();
-  });
+  await logEvent("App open");
   
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError; // report errors
   PlatformDispatcher.instance.onError = (error, stack) { // report async errors
@@ -110,35 +106,27 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish    
-  // TODO: look at this problem
-    // user signs up with email 1
-    // changes email to email 2
-    // deletes account
-    // tries to sign up with email 1 again
-    // this will fail (it should remove email 1 timestamps even with email 2 deletion)
-
-  // add readmore package for long quotes
-
-  // add privacy policy acceptance on signup
-    // Search the standards for adding this
-
-  // CONSIDER changing timestamps to work through firebase (get and create and update access only, by email)
-  // fix failed to get service from broker error
+  // add privacy policy acceptance on signup / app open
+  // make sure the privacy policy has EVERYTHING (EXHAUSTIVE)
+  // format it nicely to make it more readable
+    // use stuff like rich text
 
   // DRY
+    // Crashlytics use
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // lots of code cleanup, make it better, try finding built-in alternatives to things
+  // add a lot of initial quotes (max 250 chars each)
   // test losing network connection at random times, how does the program react?
   // Use leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
   // add more comments
   // check style and code consistency
-  // add a lot of initial quotes
   // change the icon (a quote with a heart), use that one package
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // fix the failed to get service from broker error
   // add the right github license (GNU GPLv3)
+  // fix failed to get service from broker error
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
 
   // Update the readme (include info on how to get started)
