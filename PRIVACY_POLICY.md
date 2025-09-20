@@ -12,6 +12,7 @@ Below are the links to the terms and conditions for these services.
 - https://www.google.com/analytics/terms/
 - https://firebase.google.com/terms/crashlytics
 - https://cloud.google.com/terms/
+  
 ## Contact
 Current administrators & email addresses:
 - Marco Bonato (Owner & Developer): marcobonato2007@gmail.com
@@ -28,6 +29,7 @@ This data contains:
   - Their user id
 
 ## Authentication
+### Login & signup
 This data is collected using a third party service: https://firebase.google.com/docs/auth.
 
 Data collected consists of:
@@ -36,6 +38,15 @@ Data collected consists of:
 - The id of users (this can be used to identify their email address)
 - The last date a user signed in
 - Whether a user has verified their account
+
+### App check
+This data is used to check whether a user is using a legitimate version of the application. This is called an "integrity check".
+
+This is done (and data is collected using) a third party service: https://firebase.google.com/docs/app-check.
+
+Data collected consists of:
+- The date the integrity check occurred
+- Whether the integrity check was successful or not
 
 ## Events
 This data is collected using a third party service: https://firebase.google.com/docs/analytics.
@@ -121,10 +132,10 @@ Approving, removing or modifying a quote suggestion made by a user, will be done
 Resetting a user's password or disabling or deleting their account will be done only if:
 - The user has requested for this by contacting an administrator via email
 - Or the administrator believes the account to be toxic or compromised. For example:
-- The user has sent an email to an administrator saying that their account has been hacked
-- The user has "jailbroken" the app and is attempting to make malicious database requests
-- The user is attempting some kind of attack (e.g. DDOS)
-- Etc: This is up to the administrator's discretion.
+  - The user has sent an email to an administrator saying that their account has been hacked
+  - The user has "jailbroken" the app and is attempting to make malicious database requests
+  - The user is attempting some kind of attack (e.g. DDOS)
+  - Etc: This is up to the administrator's discretion.
   
 # User rights
 Through the app, users can:
