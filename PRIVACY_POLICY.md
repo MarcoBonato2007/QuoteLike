@@ -164,7 +164,7 @@ Users may additionally request the following (again by contacting an administrat
 Please note: these requests will usually be granted, but are up to the discretion of the administrators.
 
 # Contact
-Please contact an administrator via email.
+For any queries or requests, please contact an administrator via email.
   
 Current administrators & email addresses:
 - Marco Bonato (Owner & Developer): marcobonato2007@gmail.com
