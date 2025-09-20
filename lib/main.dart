@@ -106,15 +106,11 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish    
-  // add privacy policy acceptance on signup / app open
-  // make sure the privacy policy has EVERYTHING (EXHAUSTIVE)
-  // format it nicely to make it more readable
-    // use stuff like rich text
-
   // DRY
     // Crashlytics use
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
+  // figure out app versioning
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // add a lot of initial quotes (max 250 chars each)
   // test losing network connection at random times, how does the program react?
@@ -123,6 +119,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // add more comments
   // check style and code consistency
   // change the icon (a quote with a heart), use that one package
+    // put this in assets
+    // get it to appear correctly in the about button too
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // fix the failed to get service from broker error
   // add the right github license (GNU GPLv3)

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 import 'package:quotelike/utilities/constants.dart';
 import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
@@ -230,26 +231,9 @@ class _SettingsPageState extends State<SettingsPage> {
             ]
           )
         )),
-        StandardSettingsButton("Privacy policy", Icon(Icons.privacy_tip), () => showDialog(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Text(
-                  PRIVACY_POLICY,
-                  textAlign: TextAlign.center
-                ),
-              ),
-            ),
-            actionsAlignment: MainAxisAlignment.start,
-            actions: [
-              BackButton()
-            ]
-          )
-        )),
-        SwapThemeButton()
+        SwapThemeButton(),
+        PrivacyPolicyButton(),
+        AboutButton()
       ]
     );
   }

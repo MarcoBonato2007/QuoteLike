@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quotelike/utilities/constants.dart';
 import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
@@ -140,8 +141,10 @@ class _SignupPageState extends State<SignupPage>{
               StandardTextButton("Login", () => Navigator.of(context).pop())
             ]
           ),
-          SizedBox(height: 5),
-          SwapThemeButton()
+          SizedBox(height: 10),
+          SwapThemeButton(),
+          PrivacyPolicyButton(),
+          AboutButton()
         ]
       ),
     );

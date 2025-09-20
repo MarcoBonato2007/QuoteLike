@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:quotelike/utilities/constants.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/signup_page.dart';
+import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
@@ -137,7 +138,9 @@ class _LoginPageState extends State<LoginPage>{
         loginFormKey.currentState!.removeErrors();
         Navigator.push(
           context, 
-          MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
+          MaterialPageRoute(builder: (context) => Scaffold(
+            body: SignupPage()
+          ))
         );
       }
     );
@@ -163,8 +166,10 @@ class _LoginPageState extends State<LoginPage>{
               signupButton
             ]
           ),
-          SizedBox(height: 5),
-          SwapThemeButton()
+          SizedBox(height: 10),
+          SwapThemeButton(),
+          PrivacyPolicyButton(),
+          AboutButton()
         ]
       ),
     );
