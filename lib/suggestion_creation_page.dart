@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
@@ -31,7 +31,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
         "author": quoteCreationFormKey.currentState!.text(authorField.id),
         "user": FirebaseAuth.instance.currentUser!.uid
       }).timeout(Duration(seconds: 5));
-      await logEvent("Add suggestion");
+      await logEvent(Event.ADD_SUGGESTION);
     });
 
     if (error == null) {

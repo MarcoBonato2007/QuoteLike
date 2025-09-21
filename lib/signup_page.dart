@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
@@ -25,7 +25,7 @@ class _SignupPageState extends State<SignupPage>{
   Future<void> signup(String email, String password) async {
     ErrorCode? error = await auth_functions.signup(email, password);
 
-    if ((error == null || error == ErrorCodes.EMAIL_ALREADY_IN_USE) && mounted) {
+    if ((error == null || error == ErrorCode.EMAIL_ALREADY_IN_USE) && mounted) {
       Navigator.of(context).pop(); // return to login page
       showToast(
         context,
@@ -40,8 +40,8 @@ class _SignupPageState extends State<SignupPage>{
       (newEmailError, newPasswordError) = errorsForFields(error);
       signupFormKey.currentState!.setError(emailField.id, newEmailError);
       signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
-      if (newEmailError == ErrorCodes.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-        signupFormKey.currentState!.setError(passwordField.id, ErrorCodes.HIGHLIGHT_RED);
+      if (newEmailError == ErrorCode.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
+        signupFormKey.currentState!.setError(passwordField.id, ErrorCode.HIGHLIGHT_RED);
       }      
     }
   }

@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
 /// Create a function that can only be called throttleTimeMs milliseconds from the last time it was called
@@ -74,21 +74,21 @@ class RateLimits {
   static RateLimit PASSWORD_RESET_EMAIL = RateLimit(
     "Password reset email", 
     Duration(minutes: 59),
-    ErrorCode("You have already requested a password reset in the past hour.")
+    ErrorCode.RECENT_PASSWORD_RESET
   );
   static RateLimit VERIFICATION_EMAIL = RateLimit(
     "Verification email", 
     Duration(hours: 70),
-    ErrorCode("A verification email was already sent recently. Check your inbox and spam folder.")
+    ErrorCode.RECENT_VERIFICATION_EMAIL
   );
   static RateLimit EMAIL_CHANGE = RateLimit(
     "Changing email", 
     Duration(hours: 23),
-    ErrorCode("An email change was already requested in the past day.")
+    ErrorCode.RECENT_EMAIL_CHANGE
   );
   static RateLimit QUOTE_SUGGESTION = RateLimit(
     "Quote suggestion", 
     Duration(minutes: 59),
-    ErrorCode("You have already made a suggestion in the past hour.")
+    ErrorCode.RECENT_SUGGESTION
   );
 }

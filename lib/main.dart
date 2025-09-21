@@ -7,6 +7,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/login_page.dart';
 import 'package:quotelike/main_page.dart';
@@ -18,7 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
-  await logEvent("App open");
+  await logEvent(Event.APP_OPEN);
   
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError; // report errors
   PlatformDispatcher.instance.onError = (error, stack) { // report async errors
@@ -105,9 +106,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish    
+// Polish  
+  // try using switches instead of ifs  
   // DRY
-    // Crashlytics use
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // figure out app versioning

@@ -1,6 +1,6 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 
 /// The user uses this to input the properties of the forms they want to create.
 /// 

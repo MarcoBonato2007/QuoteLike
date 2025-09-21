@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/widgets/dropdown.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/quote_card.dart';
@@ -180,7 +180,7 @@ class ExplorePageState extends State<ExplorePage> {
               else if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
                 ErrorCode? error = snapshot.data!.$1;
                 if (snapshot.data!.$1 == null) {
-                  error = ErrorCodes.UNKNOWN_ERROR;
+                  error = ErrorCode.UNKNOWN_ERROR;
                 }
                 Logger("Getting liked quotes").warning("Getting liked quotes: ${error!.errorText}", snapshot.error, snapshot.stackTrace);
                 return Center(child: Text("${error.errorText}. Try reloading (bottom right button)."));

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
@@ -40,7 +40,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (error != null) {
       showToast(
         navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
-        ErrorCodes.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
+        ErrorCode.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
         Duration(seconds: 5)
       );
     }

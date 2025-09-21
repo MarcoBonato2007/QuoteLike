@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/signup_page.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
@@ -60,13 +60,13 @@ class _LoginPageState extends State<LoginPage>{
     
     // if an unverified user logged in without errors, then tell them they're not verified and send verification
     if (newEmailError == null && newPasswordError == null && FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-      newEmailError = ErrorCodes.EMAIL_NOT_VERIFIED;
+      newEmailError = ErrorCode.EMAIL_NOT_VERIFIED;
       ErrorCode? verificationError = await auth_functions.sendEmailVerification(FirebaseAuth.instance.currentUser!);
 
       if (verificationError != null && mounted) { // show any errors that came up trying to send email verification
         showToast(
           context,
-          ErrorCodes.NO_VERIFICATION_EMAIL.errorText + verificationError.errorText, 
+          ErrorCode.NO_VERIFICATION_EMAIL.errorText + verificationError.errorText, 
           Duration(seconds: 5)
         );       
       }

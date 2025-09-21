@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 
 // This file contains global functions used in various files
 
@@ -25,124 +25,118 @@ void showLoadingIcon() {
 /// Same as Navigator.of(context).pop(), used with showLoadingIcon()
 void hideLoadingIcon() => Navigator.of(navigatorKey.currentContext!).pop();
 
-Future<void> logEvent(String eventName) async {
+/// Log an event in Firebase analytics
+Future<void> logEvent(Event event) async {
   final log = Logger("logCustomevent() in globals.dart");
 
-  // we don't tell the user about any errors here, since it's non fatal and not all that important
+  // we don't tell the user about any errors here
+  // instead we log failures to crashlytics
   await firebaseErrorHandler(log, useCrashlytics: true, () async {
-    await FirebaseAnalytics.instance.logEvent(
-      name: eventName, 
-      parameters: {
-        "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
-        "email": FirebaseAuth.instance.currentUser?.email! ?? "null"
-      }
-    ).timeout(Duration(seconds: 5));
+    await switch (event) {
+      Event.LOGIN => FirebaseAnalytics.instance.logLogin(
+        parameters: {
+          "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
+          "email": FirebaseAuth.instance.currentUser?.email ?? "null"
+        }
+      ),
+      Event.SIGN_UP => FirebaseAnalytics.instance.logSignUp(
+        signUpMethod: "Email & Password",
+        parameters: {
+          "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
+          "email": FirebaseAuth.instance.currentUser?.email ?? "null"
+        }
+      ),
+      Event.APP_OPEN => FirebaseAnalytics.instance.logAppOpen(
+        parameters: {
+          "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
+          "email": FirebaseAuth.instance.currentUser?.email ?? "null"
+        }
+      ),
+      _ => FirebaseAnalytics.instance.logEvent(
+        name: event.eventName, 
+        parameters: {
+          "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
+          "email": FirebaseAuth.instance.currentUser?.email ?? "null"
+        }
+      )
+    }.timeout(Duration(seconds: 5));
   });
+}
+
+Future<void> logErrorInCrashlytics(dynamic error, dynamic stackTrace, ErrorCode? errorCode, Logger log) async {
+  try {
+    await FirebaseCrashlytics.instance.recordError(
+      error,
+      stackTrace,
+      reason: '${log.name}: Error logged with crashlytics: $errorCode. ${error?.code == null ? "Not firebase error" : "Firebase code: ${error.code}"}',
+    );
+  }
+  catch (e, stackTrace) {
+    log.warning("${log.name}: Crashlytics failed", e, stackTrace);
+  }
 }
 
 /// try excepts a function using firebase in some way, returns an error message (see constants.dart)
 Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true, bool useCrashlytics = false}) async {
-  ErrorCode? error;
-  bool errorLoggedInCrashlytics = false;
+  ErrorCode? errorCode;
+  dynamic error, stack;
 
   // first check for internet connection.
   if (doNetworkCheck && (await Connectivity().checkConnectivity()).contains(ConnectivityResult.none)) {
-    error = ErrorCodes.NETWORK_ERROR;
-    return error;
+    errorCode = ErrorCode.NETWORK_ERROR;
+    return errorCode;
   }
 
   try { // next, run the function.
     await firebaseFunc();
   }
   on FirebaseException catch (e, stackTrace) { // handle possible errors
-    if (e.code == "invalid-email" || e.code == "channel-error") { // channel-error means empty input of some kind
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.INVALID_EMAIL;
-    }
-    else if (e.code == "email-already-in-use") {
-      error = ErrorCodes.EMAIL_ALREADY_IN_USE;
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-    }
-    else if (e.code == "too-many-requests") {
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.SERVERS_BUSY;
-    }
-    else if (e.code == "user-not-found" || e.code == "wrong-password" || e.code == "invalid-credential") {
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.INCORRECT_CREDENTIALS;
-    }
-    else if (e.code == "network-request-failed") {
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.NETWORK_ERROR;
-    }
-    else if (e.code == "requires-recent-login" || e.code == "user-token-expired") {
-      log.info("${log.name}: Firebase caught error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.REQUIRES_RECENT_LOGIN;
-    }
-    else {
-      log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
-      error = ErrorCodes.UNKNOWN_ERROR;
-      try {
-        await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
-          error,
-          stackTrace,
-          reason: '${log.name}: Unknown firebase error; ${e.code}',
-        );
-        errorLoggedInCrashlytics = true;        
-      }
-      catch (e, stackTrace) {
-        log.warning("${log.name}: Crashlytics failed", e, stackTrace);
-      }
-    }
+    error = e;
+    stack = stackTrace;
+
+    errorCode = switch (e.code) {
+      "invalid-email" || "channel-error" => ErrorCode.INVALID_EMAIL,
+      "email-already-in-use" => ErrorCode.EMAIL_ALREADY_IN_USE,
+      "too-many-requests" => ErrorCode.SERVERS_BUSY,
+      "user-not-found" || "wrong-password" || "invalid-credential" => ErrorCode.INCORRECT_CREDENTIALS,
+      "network-request-failed" => ErrorCode.NETWORK_ERROR,
+      "requires-recent-login" || "user-token-expired" => ErrorCode.REQUIRES_RECENT_LOGIN,
+      _ => ErrorCode.UNKNOWN_ERROR
+    };
+
+    log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
+
   }
   on TimeoutException catch (e, stackTrace) {
+    error = e;
+    stack = stackTrace;
     log.info("${log.name}: Timeout caught error.", e, stackTrace);
-    error = ErrorCodes.TIMEOUT;
+    errorCode = ErrorCode.TIMEOUT;
   }
   catch (e, stackTrace) { // catch any non-firebase errors
+    error = e;
+    stack = stackTrace;
     log.warning("${log.name}: Non-firebase unknown error", e, stackTrace);
-    error = ErrorCodes.UNKNOWN_ERROR;
-    try {
-      await FirebaseCrashlytics.instance.recordError( // we always record unknown errors in crashlytics
-        error,
-        stackTrace,
-        reason: '${log.name}: Unknown flutter error',
-      );
-      errorLoggedInCrashlytics = true;      
-    }
-    catch (e, stackTrace) {
-      log.warning("${log.name}: Crashlytics failed", e, stackTrace);
-    }
+    errorCode = ErrorCode.UNKNOWN_ERROR;  
   }
 
-  // If useCrashlytics is true, we will report this error to crashlytics (if not done already)
-  if (!errorLoggedInCrashlytics && useCrashlytics && error != null) {
-    try {
-      await FirebaseCrashlytics.instance.recordError(
-        error,
-        null,
-        reason: log.name,
-      );      
-    }
-    catch (e, stackTrace) {
-      log.warning("${log.name}: Crashlytics failed", e, stackTrace);
-    }
-
+  if (useCrashlytics && error != null) {
+    await logErrorInCrashlytics(error, stack, errorCode, log);
   }
 
-  return error;
+  return errorCode;
 }
 
 /// convert an error from firebaseErrorHandler() into errors for an email and password field
 (ErrorCode?, ErrorCode?) errorsForFields(ErrorCode? error) {
   ErrorCode? emailError, passwordError;
   
-  if (error == ErrorCodes.INVALID_EMAIL || error == ErrorCodes.EMAIL_NOT_VERIFIED) {
+  if (error == ErrorCode.INVALID_EMAIL || error == ErrorCode.EMAIL_NOT_VERIFIED) {
     emailError = error; // in this case, only the email field gets an error
   }
   else if (error != null) {
     // otherwise, the email field is highlighted and error is shown in password filed
-    emailError = ErrorCodes.HIGHLIGHT_RED;
+    emailError = ErrorCode.HIGHLIGHT_RED;
     passwordError = error;
   }
 

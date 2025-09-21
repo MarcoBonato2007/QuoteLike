@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
-import 'package:quotelike/utilities/constants.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
 
@@ -16,7 +16,7 @@ Future<ErrorCode?> sendEmailVerification(User user) async {
   ErrorCode? error = await RateLimits.VERIFICATION_EMAIL.testCooldown(user.uid);
   error ??= await firebaseErrorHandler(log, () async {
     await FirebaseAuth.instance.currentUser!.sendEmailVerification().timeout(Duration(seconds: 5));
-    await logEvent("Send email verification");
+    await logEvent(Event.SEND_EMAIL_VERIFICATION);
   });
   if (error == null) {
     await RateLimits.VERIFICATION_EMAIL.setTimestamp(user.uid);
@@ -34,7 +34,7 @@ Future<ErrorCode?> forgotPassword(String email) async {
   ErrorCode? error = await RateLimits.PASSWORD_RESET_EMAIL.testCooldown(email);
   error ??= await firebaseErrorHandler(log, () async {
     await FirebaseAuth.instance.sendPasswordResetEmail(email: email).timeout(Duration(seconds: 5));
-    await logEvent("Send password reset email");
+    await logEvent(Event.SEND_PASSWORD_RESET);
   });
   if (error == null) {
     await RateLimits.PASSWORD_RESET_EMAIL.setTimestamp(email);
@@ -57,7 +57,7 @@ Future<ErrorCode?> login(String email, String password) async {
       email: email,
       password: password
     ).timeout(Duration(seconds: 5));
-    await logEvent("Login");
+    await logEvent(Event.LOGIN);
   });
 
   hideLoadingIcon(); 
@@ -76,7 +76,7 @@ Future<ErrorCode?> signup(String email, String password) async {
       email: email,
       password: password
     ).timeout(Duration(seconds: 5));
-    await logEvent("Signup");
+    await logEvent(Event.SIGN_UP);
   });
 
   hideLoadingIcon();
@@ -90,7 +90,7 @@ Future<ErrorCode?> signout() async {
 
   ErrorCode? error = await firebaseErrorHandler(log, doNetworkCheck: false, () async {
     await FirebaseAuth.instance.signOut().timeout(Duration(seconds: 5));
-    await logEvent("Logout");
+    await logEvent(Event.LOGOUT);
   });
 
   hideLoadingIcon();
@@ -120,7 +120,7 @@ Future<ErrorCode?> deleteUser() async {
           );
         }).timeout(Duration(seconds: 5));
       }
-      await logEvent("Delete liked quotes");
+      await logEvent(Event.DELETE_LIKED_QUOTES);
     }).timeout(Duration(seconds: 5));
   });
 
@@ -133,7 +133,7 @@ Future<ErrorCode?> deleteUser() async {
     await RateLimits.QUOTE_SUGGESTION.deleteTimestamp(FirebaseAuth.instance.currentUser!.uid);
     await RateLimits.EMAIL_CHANGE.deleteTimestamp(FirebaseAuth.instance.currentUser!.uid);
     
-    await logEvent("Delete user from auth");
+    await logEvent(Event.DELETE_USER);
   });
 
   hideLoadingIcon();
@@ -149,7 +149,7 @@ Future<ErrorCode?> changeEmail(String newEmail) async {
   ErrorCode? error = await RateLimits.EMAIL_CHANGE.testCooldown(FirebaseAuth.instance.currentUser!.uid);
   error ??= await firebaseErrorHandler(log, () async {
     await FirebaseAuth.instance.currentUser!.verifyBeforeUpdateEmail(newEmail).timeout(Duration(seconds: 5));
-    await logEvent("Send email change email");
+    await logEvent(Event.CHANGE_EMAIL);
   });
   if (error == null) {
     await RateLimits.EMAIL_CHANGE.setTimestamp(FirebaseAuth.instance.currentUser!.uid);
