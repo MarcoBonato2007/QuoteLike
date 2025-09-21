@@ -28,10 +28,8 @@ class ExplorePageState extends State<ExplorePage> {
   Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
     final log = Logger("getLikedQuotes() in main_page.dart");
 
-    List<String> likedQuotes = [];
-    ErrorCode? error;
-    
-    ErrorCode? afterError = await firebaseErrorHandler(log, () async {
+    List<String> likedQuotes = [];    
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance
         .collection("users")
         .doc(FirebaseAuth.instance.currentUser!.uid)
@@ -42,7 +40,6 @@ class ExplorePageState extends State<ExplorePage> {
         }          
       }).timeout(Duration(seconds: 5));
     });
-    error ??= afterError;
 
     return (error, likedQuotes);
   }
@@ -50,7 +47,7 @@ class ExplorePageState extends State<ExplorePage> {
   @override
   void initState() {
     super.initState();
-    likedQuotesFuture = getLikedQuotes();
+    likedQuotesFuture = getLikedQuotes(); // put here to avoid explore page rebuilding if you go back to it from settings
     pagingController = PagingController<int, QuoteCard>(
       getNextPageKey: (state) => state.lastPageIsEmpty ? null : 0,
       fetchPage: (pageKey) async {
@@ -60,10 +57,10 @@ class ExplorePageState extends State<ExplorePage> {
         if (error != null) {
           showToast(context, error.errorText, Duration(seconds: 3));
         }
-        return newQuotes; // empty if there is an error
+        return newQuotes;
       }
     );
-    pagingController.addListener(() {
+    pagingController.addListener(() { // used so that lastQuoteDoc is set to null after a refresh
       if (pagingController.items == null || pagingController.items!.isEmpty) {
         setState(() {lastQuoteDoc = null;});
       }
@@ -109,7 +106,6 @@ class ExplorePageState extends State<ExplorePage> {
     error = await firebaseErrorHandler(log, () async =>
       await query.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
         for (DocumentSnapshot doc in querySnapshot.docs) {
-          if (doc.id == PLACEHOLDER_DOC_NAME) {continue;}
           lastQuoteDoc = doc;
           queryResults.add(QuoteCard(
             doc.id, 
@@ -139,8 +135,6 @@ class ExplorePageState extends State<ExplorePage> {
 
   @override
   Widget build(BuildContext context) {
-    // we don't actually use page key, we use lastQuoteDoc
-
     List<Map<String, String>> filterOptions = [
       for (Filter filter in Filter.values) {"name": filter.name, "label": filter.label}
     ];
@@ -162,17 +156,13 @@ class ExplorePageState extends State<ExplorePage> {
         SizedBox(height: 10),
         Expanded(
           child: FutureBuilder(
-            future: likedQuotesFuture, // using this variable prevents explore page from being reloaded constantly
+            future: likedQuotesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator());
               }
               else if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
-                ErrorCode? error = snapshot.data!.$1;
-                if (snapshot.data!.$1 == null) {
-                  error = ErrorCode.UNKNOWN_ERROR;
-                }
-                Logger("Getting liked quotes").warning("Getting liked quotes: ${error!.errorText}", snapshot.error, snapshot.stackTrace);
+                ErrorCode? error = snapshot.data!.$1 ?? ErrorCode.UNKNOWN_ERROR;
                 return Center(child: Text("${error.errorText}. Try reloading (bottom right button)."));
               }
               else {

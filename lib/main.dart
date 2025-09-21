@@ -107,10 +107,6 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
-  // Consider making a really big enum to represent your database structure (e.g. collections, each collection has doc, etc.)
-    // Advantages: Constants such as field names are now standardized!
-
-  // DRY
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // figure out app versioning

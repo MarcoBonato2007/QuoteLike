@@ -39,6 +39,8 @@ enum Event {
   const Event(this.eventName);
 }
 
+// Filter and Sort enums are used for the dropdown menus in explore_page.dart
+
 enum Filter {
   NONE("None", "None"),
   LIKED("Liked", "Liked by you"),

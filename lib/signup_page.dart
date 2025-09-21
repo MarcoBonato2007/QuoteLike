@@ -17,9 +17,9 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage>{
   final signupFormKey = GlobalKey<ValidatedFormState>();
-  Field emailField = EmailField("Email");
-  late Field passwordField;
-  late Field passwordConfirmField;
+  final Field emailField = EmailField("Email");
+  late final Field passwordField;
+  late final Field passwordConfirmField;
 
   /// This is used instead of auth_functions.signup()
   Future<void> signup(String email, String password) async {

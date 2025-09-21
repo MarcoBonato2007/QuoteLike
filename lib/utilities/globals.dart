@@ -10,10 +10,6 @@ import 'package:quotelike/utilities/enums.dart';
 
 // This file contains global functions and variablesused in various files
 
-/// Some collections contain placeholder documents, named "placeholder"
-// ignore: constant_identifier_names
-const String PLACEHOLDER_DOC_NAME = "placeholder";
-
 /// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

@@ -48,7 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
       showToast(
         navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
         "Account deleted successfully", 
-        Duration(seconds: 5)
+        Duration(seconds: 3)
       );  
     }
   }
@@ -61,14 +61,14 @@ class _SettingsPageState extends State<SettingsPage> {
       showToast(
         context, 
         "A password reset email has been sent.",
-        Duration(seconds: 5),
+        Duration(seconds: 3),
       );
     }
     else if (error != null && mounted) {
       showToast(
         context, 
         error.errorText,
-        Duration(seconds: 5),
+        Duration(seconds: 3),
       ); 
     }
 
@@ -101,16 +101,47 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void showConfirmationDialog(String title, StandardElevatedButton confirmButton, {Widget? body, String? warningText}) => showDialog(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: Text(title, textAlign: TextAlign.center),
+      titlePadding: EdgeInsetsGeometry.only(left: 24, right: 24, top: 24),
+      contentPadding: EdgeInsets.only(left: 24, right: 24, top: 5),
+      actionsPadding: EdgeInsets.only(left: 24, right: 24, bottom: 24),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          warningText != null ? RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: DefaultTextStyle.of(context).style,
+              children: <TextSpan>[
+                TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(text: warningText),
+              ],
+            ),
+          ) : SizedBox.shrink(),
+          SizedBox(height: 15),
+          body ?? SizedBox.shrink()
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
+      actions: [
+        BackButton(),
+        confirmButton
+      ]  
+    )
+  );
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Center(
+        Center( // a read-only text form field showing the user's email
           child: TextFormField(
             initialValue: FirebaseAuth.instance.currentUser!.email!,
             readOnly: true,
-            autofocus: false,
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               label: Text("Email address"),
@@ -118,118 +149,48 @@ class _SettingsPageState extends State<SettingsPage> {
           )
         ),
         SizedBox(height: 5),
-        StandardSettingsButton("Change email", Icon(Icons.email), () => showDialog(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            contentPadding: EdgeInsets.only(left: 24, right: 24, top: 24),
-            actionsPadding: EdgeInsets.only(left: 24, right: 24, bottom: 24),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Confirm email change",
-                  textAlign: TextAlign.center
-                ),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: const <TextSpan>[
-                      TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: 'Maximum 1 email change / day. Make sure the email is spelled correctly.'),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 15),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  child: ValidatedForm(
-                    key: emailFormKey,
-                    [emailField],
-                  ),
-                )
-              ],
+        StandardSettingsButton("Change email", Icon(Icons.email), () => showConfirmationDialog(
+          "Confirm email change",
+          StandardElevatedButton(
+            "Change email", 
+            () async {
+              emailFormKey.currentState!.removeErrors();
+              if (emailFormKey.currentState!.validate(emailField.id)) {
+                await changeEmail(emailFormKey.currentState!.text(emailField.id));
+              }
+            }
+          ),
+          warningText: "Maximum 1 email change / day. Make sure the email is spelled correctly.",
+          body: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: ValidatedForm(
+              key: emailFormKey,
+              [emailField],
             ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actions: [
-              BackButton(),
-              StandardElevatedButton(
-                "Change email", 
-                () async {
-                  emailFormKey.currentState!.removeErrors();
-                  if (emailFormKey.currentState!.validate(emailField.id)) {
-                    await changeEmail(emailFormKey.currentState!.text(emailField.id));
-                  }
-                }
-              )
-            ]
           )
         )),
-        StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showDialog(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Confirm password reset",
-                  textAlign: TextAlign.center
-                ),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: const <TextSpan>[
-                      TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: 'Maximum once per hour'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actions: [
-              BackButton(),
-              StandardElevatedButton(
-                "Reset password", 
-                () async => await forgotPassword()
-              )
-            ]
-          )
+        StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showConfirmationDialog(
+          "Confirm password reset",
+          StandardElevatedButton(
+            "Reset password", 
+            () async => await forgotPassword()
+          ),
+          warningText: 'Maximum once per hour'
         )),
-        StandardSettingsButton("Log out", Icon(Icons.logout), () => showDialog( // show confirmation dialog
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Text(
-              "Are you sure you want to log out?",
-              textAlign: TextAlign.center
-            ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actions: [
-              BackButton(),
-              StandardElevatedButton(
-                "Log out", 
-                () async => await signout()
-              )
-            ]
-          )
+        StandardSettingsButton("Log out", Icon(Icons.logout), () => showConfirmationDialog( // show confirmation dialog
+          "Confirm log out",
+          StandardElevatedButton(
+            "Log out", 
+            () async => await signout()
+          )          
         )),
-        StandardSettingsButton("Delete account", Icon(Icons.delete), () => showDialog( // show confirmation dialog
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Text(
-              "Are you sure you want to delete your account? This is non-reversible.",
-              textAlign: TextAlign.center
-            ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actions: [
-              BackButton(),
-              StandardElevatedButton( // add back button
-                "Delete account", 
-                () async => await deleteUser()
-              )
-            ]
-          )
+        StandardSettingsButton("Delete account", Icon(Icons.delete), () => showConfirmationDialog( // show confirmation dialog
+          "Confirm account deletion",
+          StandardElevatedButton( // add back button
+            "Delete account", 
+            () async => await deleteUser()
+          ),
+          warningText: "This is non-reversible"
         )),
         SwapThemeButton(),
         PrivacyPolicyButton(),

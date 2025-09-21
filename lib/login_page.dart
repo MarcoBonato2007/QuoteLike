@@ -20,8 +20,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage>{
   // The key used to access the form containing the email & password fields
   final loginFormKey = GlobalKey<ValidatedFormState>();
-  Field emailField = EmailField("Email");
-  late Field passwordField;
+  final Field emailField = EmailField("Email");
+  late final Field passwordField;
   
   /// This is used instead of auth_functions.forgotPassword()
   Future<void> forgotPassword(String email) async {
