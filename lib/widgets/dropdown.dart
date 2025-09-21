@@ -48,12 +48,12 @@ class Dropdown extends StatelessWidget {
       ),
       selectedItemBuilder: (BuildContext context) {
         return options.map((option) {
-          return Text(option['value']!);
+          return Text(option['name']!);
         }).toList();
       },
       items: options.map((option) {
         return DropdownMenuItem<String>(
-          value: option["value"],
+          value: option["name"],
           child: Text(option["label"]!)
         );
       }).toList()

@@ -38,3 +38,24 @@ enum Event {
   final String eventName;
   const Event(this.eventName);
 }
+
+enum Filter {
+  NONE("None", "None"),
+  LIKED("Liked", "Liked by you"),
+  NOT_LIKED("Not liked", "Not liked by you");
+
+  final String name; // shown inside the dropdown field
+  final String label; // shown in the dropdown selection menu
+  const Filter(this.name, this.label);
+}
+
+enum Sort {
+  RANDOM("Random", "Random"),
+  RECENT("Recent", "Recently added"),
+  MOST_LIKED("Most liked", "Most liked"),
+  LEAST_LIKED("Least liked", "Least liked"); 
+
+  final String name; // shown inside the dropdown field
+  final String label; // shown in the dropdown selection menu
+  const Sort(this.name, this.label);
+}

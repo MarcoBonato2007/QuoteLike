@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Filter;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -82,26 +82,21 @@ class ExplorePageState extends State<ExplorePage> {
 
     Query query = FirebaseFirestore.instance.collection("quotes");
     List<QuoteCard> queryResults = [];
-
-    if (filter != "None" && filter != null) {
-      if (filter == "Liked") {
-        query = query.where(FieldPath.documentId, whereIn: likedQuotes);
-      }
-      else if (filter == "Not liked") {
-        query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
-      }
-    }
     
-    if (sort == "Random") {
-      // query = query.orderBy(FieldPath.documentId);
+    if (filter == Filter.LIKED.name) {
+      query = query.where(FieldPath.documentId, whereIn: likedQuotes);
     }
-    else if (sort == "Most liked") {
+    else if (filter == Filter.NOT_LIKED.name) {
+      query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
+    }
+
+    if (sort == Sort.MOST_LIKED.name) {
       query = query.orderBy("likes", descending: true);
     }
-    else if (sort == "Least liked") {
+    else if (sort == Sort.LEAST_LIKED.name) {
       query = query.orderBy("likes", descending: false);
     }
-    else if (sort == "Recent") {
+    else if (sort == Sort.RECENT.name) {
       query = query.orderBy("creation", descending: true);
     }
 
@@ -114,7 +109,7 @@ class ExplorePageState extends State<ExplorePage> {
     error = await firebaseErrorHandler(log, () async =>
       await query.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
         for (DocumentSnapshot doc in querySnapshot.docs) {
-          if (doc.id == "placeholder") {continue;}
+          if (doc.id == PLACEHOLDER_DOC_NAME) {continue;}
           lastQuoteDoc = doc;
           queryResults.add(QuoteCard(
             doc.id, 
@@ -147,15 +142,10 @@ class ExplorePageState extends State<ExplorePage> {
     // we don't actually use page key, we use lastQuoteDoc
 
     List<Map<String, String>> filterOptions = [
-      {"value": "None", "label": "None"},
-      {"value": "Liked", "label": "Liked by you"},
-      {"value": "Not liked", "label": "Not liked by you"},
+      for (Filter filter in Filter.values) {"name": filter.name, "label": filter.label}
     ];
     List<Map<String, String>> sortOptions = [
-      {"value": "Random", "label": "Random"},
-      {"value": "Most liked", "label": "Most liked"},
-      {"value": "Least liked", "label": "Least liked"},
-      {"value": "Recent", "label": "Recent"},
+      for (Sort sort in Sort.values) {"name": sort.name, "label": sort.label}
     ];
 
     return Column(

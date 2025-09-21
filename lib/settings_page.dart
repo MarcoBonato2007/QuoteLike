@@ -181,7 +181,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: DefaultTextStyle.of(context).style,
                     children: const <TextSpan>[
                       TextSpan(text: 'Warning: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: 'Maximum once per day'),
+                      TextSpan(text: 'Maximum once per hour'),
                     ],
                   ),
                 ),

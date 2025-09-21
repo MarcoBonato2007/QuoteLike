@@ -4,6 +4,7 @@ import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// This file contains a privacy policy button widget and an about button widget
 class PrivacyPolicyButton extends StatelessWidget {
   const PrivacyPolicyButton({super.key});
 

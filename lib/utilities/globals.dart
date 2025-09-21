@@ -8,7 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:quotelike/utilities/enums.dart';
 
-// This file contains global functions used in various files
+// This file contains global functions and variablesused in various files
+
+/// Some collections contain placeholder documents, named "placeholder"
+// ignore: constant_identifier_names
+const String PLACEHOLDER_DOC_NAME = "placeholder";
 
 /// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -76,7 +80,7 @@ Future<void> logErrorInCrashlytics(dynamic error, dynamic stackTrace, ErrorCode?
   }
 }
 
-/// try excepts a function using firebase in some way, returns an error message (see constants.dart)
+/// try excepts a function using firebase in some way, returns an error message (see enums.dart)
 Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true, bool useCrashlytics = false}) async {
   ErrorCode? errorCode;
   dynamic error, stack;
@@ -105,7 +109,6 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     };
 
     log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
-
   }
   on TimeoutException catch (e, stackTrace) {
     error = e;
