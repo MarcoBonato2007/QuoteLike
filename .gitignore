@@ -1,7 +1,7 @@
 # Added by me (not part of the default .gitignore)
 firebase.json
 /android/app/google-services.json
-/lib/firebase_options.dart
+/lib/utilities/firebase_options.dart
 
 # Miscellaneous
 *.class
