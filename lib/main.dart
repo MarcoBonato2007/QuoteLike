@@ -107,11 +107,15 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
+  // allow quote ordering to be actually random (HOW??)
+    // by default this is not possible
+    // But maybe you can fake it? e.g. by generating some random token and comparing it with the id of a quote
+      // e.g. start after a certain generated token, if u run out go back to beginning.
+      
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
   // figure out app versioning
   // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // add a lot of initial quotes (max 250 chars each)
   // test losing network connection at random times, how does the program react?
   // Use leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
@@ -122,7 +126,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // get it to appear correctly in the about button too
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // fix the failed to get service from broker error
-  // add the right github license (GNU GPLv3)
   // fix failed to get service from broker error
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
 

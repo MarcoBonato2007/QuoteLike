@@ -24,11 +24,22 @@ class QuoteCard extends StatefulWidget {
 
 class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
   late bool userLikedQuote;
+  late final AnimationController animationController;
 
   @override
   void initState() {
+    animationController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    )..forward();
     userLikedQuote = widget.isLiked;
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    animationController.dispose();
+    super.dispose();
   }
 
   /// Likes the quote if already liked, or removes the like if not
@@ -78,10 +89,6 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final animationController = AnimationController(
-      duration: Duration(milliseconds: 300),
-      vsync: this,
-    )..forward();
     Widget likeIcon = !userLikedQuote ? Icon(Icons.favorite_border, color: ColorScheme.of(context).onSurface)
     : ScaleTransition(
       alignment: Alignment.bottomCenter,

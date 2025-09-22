@@ -74,6 +74,14 @@ class ValidatedFormState extends State<ValidatedForm> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    for (TextEditingController controller in controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  } 
+
   void setError(String fieldId, ErrorCode? newError) => setState(() {
     fieldErrors[fieldId] = newError;
   });

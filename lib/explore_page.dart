@@ -24,26 +24,6 @@ class ExplorePageState extends State<ExplorePage> {
   List<String>? likedQuotes;
   late final PagingController<int, QuoteCard> pagingController;
 
-  /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
-  Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
-    final log = Logger("getLikedQuotes() in main_page.dart");
-
-    List<String> likedQuotes = [];    
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance
-        .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection("liked_quotes")
-      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
-        for (DocumentSnapshot doc in querySnapshot.docs) {
-          likedQuotes.add(doc.id);
-        }          
-      }).timeout(Duration(seconds: 5));
-    });
-
-    return (error, likedQuotes);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -65,6 +45,32 @@ class ExplorePageState extends State<ExplorePage> {
         setState(() {lastQuoteDoc = null;});
       }
     });
+  }
+
+  @override
+  void dispose() {
+    pagingController.dispose();
+    super.dispose();
+  }
+
+  /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
+  Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
+    final log = Logger("getLikedQuotes() in main_page.dart");
+
+    List<String> likedQuotes = [];    
+    ErrorCode? error = await firebaseErrorHandler(log, () async {
+      await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .collection("liked_quotes")
+      .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
+        for (DocumentSnapshot doc in querySnapshot.docs) {
+          likedQuotes.add(doc.id);
+        }          
+      }).timeout(Duration(seconds: 5));
+    });
+
+    return (error, likedQuotes);
   }
 
   /// Gets the next 10 quotes to scroll after lastQuoteDoc
