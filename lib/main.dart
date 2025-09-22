@@ -107,13 +107,12 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
-  // allow quote ordering to be actually random (HOW??)
-    // by default this is not possible
-    // But maybe you can fake it? e.g. by generating some random token and comparing it with the id of a quote
-      // e.g. start after a certain generated token, if u run out go back to beginning.
-      
   // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
+  // find places to add const and final 
+  // first dart imports, then package imports, then custom imports (separate with spaces)
+  // try using dart format
+  // add a ruler for 80 characters and try excluding lines longer
   // figure out app versioning
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // test losing network connection at random times, how does the program react?

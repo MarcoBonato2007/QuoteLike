@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart' hide Filter;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -40,9 +42,11 @@ class ExplorePageState extends State<ExplorePage> {
         return newQuotes;
       }
     );
-    pagingController.addListener(() { // used so that lastQuoteDoc is set to null after a refresh
+    pagingController.addListener(() { // used so that lastQuoteDoc and quoteIds are set to null after a refresh
       if (pagingController.items == null || pagingController.items!.isEmpty) {
-        setState(() {lastQuoteDoc = null;});
+        setState(() {
+          lastQuoteDoc = null;
+        });
       }
     });
   }
@@ -80,8 +84,8 @@ class ExplorePageState extends State<ExplorePage> {
     final log = Logger("getNextQuotesToScroll() in explore_page.dart");
     ErrorCode? error;
 
-    String? filter = filterKey.currentState!.value;
-    String? sort = sortKey.currentState!.value;
+    String? filter = filterKey.currentState!.value ?? Filter.NONE.name;
+    String? sort = sortKey.currentState!.value ?? Sort.RANDOM.name;
 
     Query query = FirebaseFirestore.instance.collection("quotes");
     List<QuoteCard> queryResults = [];
@@ -92,8 +96,17 @@ class ExplorePageState extends State<ExplorePage> {
     else if (filter == Filter.NOT_LIKED.name) {
       query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
     }
-
-    if (sort == Sort.MOST_LIKED.name) {
+    
+    if (sort == Sort.RANDOM.name) {
+      // We generate a random string, and match documents with id's after this
+      // This isn't a truly random sort, but is a good alternative
+      // We may get repeated quotes using this method, and may even match 0 quotes on accident
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      final random = Random();
+      String randomId = String.fromCharCodes(Iterable.generate(20, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+      query = query.where(FieldPath.documentId, isGreaterThanOrEqualTo: randomId);
+    }
+    else if (sort == Sort.MOST_LIKED.name) {
       query = query.orderBy("likes", descending: true);
     }
     else if (sort == Sort.LEAST_LIKED.name) {
@@ -103,7 +116,7 @@ class ExplorePageState extends State<ExplorePage> {
       query = query.orderBy("creation", descending: true);
     }
 
-    if (lastQuoteDoc != null) {
+    if (lastQuoteDoc != null && sort != Sort.RANDOM.name) {
       query = query.startAfterDocument(lastQuoteDoc!);
     }
   
