@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+
+import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
-import 'package:quotelike/utilities/rate_limiting.dart';
-import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -53,7 +54,7 @@ class _SignupPageState extends State<SignupPage>{
       Icon(Icons.lock),
       true,
       (String? currentValue) {
-        List<String> specialCharacters = ["^", "\$", "*", ".", "[", "]", "{", "}", "(", ")", "?", '"', "!", "@", "#", "%", "&", "/", "\\", ",", ">", "<", "'", ":", ";", "|", "_", "~"];
+        const List<String> specialCharacters = ["^", "\$", "*", ".", "[", "]", "{", "}", "(", ")", "?", '"', "!", "@", "#", "%", "&", "/", "\\", ",", ">", "<", "'", ":", ";", "|", "_", "~"];
         
         if (currentValue == "") {
           return "Please enter a password";
@@ -138,7 +139,7 @@ class _SignupPageState extends State<SignupPage>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Already have an account?"),
-              StandardTextButton("Login", () => Navigator.of(context).pop())
+              StandardTextButton("Login", () => Navigator.of(context).pop()) // redirect user back to login page
             ]
           ),
           SizedBox(height: 10),

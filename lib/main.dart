@@ -1,19 +1,21 @@
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
+
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotelike/utilities/enums.dart';
-import 'package:quotelike/utilities/globals.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:quotelike/login_page.dart';
 import 'package:quotelike/main_page.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/firebase_options.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,22 +109,10 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
-  // add triple slash comments to EVERY function, class, important variable
   // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
-  // find places to add const and final 
-  // first dart imports, then package imports, then custom imports (separate with spaces)
-  // try using dart format
-  // add a ruler for 80 characters and try excluding lines longer
-  // figure out app versioning
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // test losing network connection at random times, how does the program react?
-  // Use leading underscore (_) for best practice, see where you're supposed to use it
   // Research other good practices
-  // add more comments
-  // check style and code consistency
-  // change the icon (a quote with a heart), use that one package
-    // put this in assets
-    // get it to appear correctly in the about button too
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
   // fix the failed to get service from broker error
   // fix failed to get service from broker error
@@ -133,3 +123,5 @@ class _MyHomePageState extends State<MyHomePage> {
   // change the appcheck to AndroidProvider.playIntegrity
   // use --obfuscate and --split-debug when building to make it harder to reverse engineer
   // Launch it and test there. Really try to break it.
+
+  // In future: remember to update the version in pubspec.yaml

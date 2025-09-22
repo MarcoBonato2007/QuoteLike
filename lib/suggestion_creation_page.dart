@@ -1,8 +1,9 @@
+import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
-import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
@@ -21,10 +22,11 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
   late Field contentField;
   late Field authorField;
 
-  Future<ErrorCode?> addSuggestion() async {
+  Future<void> addSuggestion() async {
+    showLoadingIcon();
     final log = Logger("addSuggestion() in quote_creation_page.dart");
-    ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.uid);
 
+    ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.uid);
     error ??= await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance.collection("suggestions").add({
         "content": quoteCreationFormKey.currentState!.text(contentField.id),
@@ -33,12 +35,22 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
       }).timeout(Duration(seconds: 5));
       await logEvent(Event.ADD_SUGGESTION);
     });
-
     if (error == null) {
       await RateLimits.QUOTE_SUGGESTION.setTimestamp(FirebaseAuth.instance.currentUser!.uid);
     }
 
-    return error;
+    hideLoadingIcon();
+
+    if (mounted) {
+      Navigator.of(context).pop(); // remove the suggestion dialog
+    }
+
+    if (error != null && mounted) {
+      showToast(context, error.errorText, Duration(seconds: 3));
+    }
+    else if (mounted) {
+      showToast(context, "Suggestion received", Duration(seconds: 2));
+    }
   }
 
   @override
@@ -79,10 +91,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
 
     final quoteCreationForm = ValidatedForm(
       key: quoteCreationFormKey,
-      [
-        contentField,
-        authorField
-      ]
+      [contentField, authorField]
     );
 
     return AlertDialog(
@@ -94,20 +103,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
           "Suggest quote",
           () async {
             if (quoteCreationFormKey.currentState!.validateAll()) {
-              showLoadingIcon();
-              ErrorCode? error = await addSuggestion();
-              hideLoadingIcon();
-              
-              if (context.mounted) {
-                Navigator.of(context).pop(); // remove the suggestion dialog
-              }
-
-              if (error != null && context.mounted) {
-                showToast(context, error.errorText, Duration(seconds: 3));
-              }
-              else if (context.mounted) {
-                showToast(context, "Suggestion received", Duration(seconds: 2));
-              }
+              await addSuggestion();
             }
           }
         ),

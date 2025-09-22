@@ -1,12 +1,15 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
 class SettingsPage extends StatefulWidget {

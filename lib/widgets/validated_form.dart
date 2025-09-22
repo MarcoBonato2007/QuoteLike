@@ -1,8 +1,10 @@
-import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+
+import 'package:email_validator/email_validator.dart';
+
 import 'package:quotelike/utilities/enums.dart';
 
-/// The user uses this to input the properties of the forms they want to create.
+/// The user uses this class to input the properties of the forms they want to create.
 /// 
 /// The id doubles as the hint text. 
 /// Note that this means no two fields can have the same hint text.
@@ -43,9 +45,6 @@ class EmailField extends Field {
     },  
   );
 }
-
-/// All of the validated forms in the program have numerous things in common, 
-/// so it's best to make a separate class to avoid repetiion.
 class ValidatedForm extends StatefulWidget {
   final List<Field> fields;
   const ValidatedForm(this.fields, {super.key});
@@ -63,7 +62,6 @@ class ValidatedFormState extends State<ValidatedForm> {
 
   @override
   void initState() {
-    // Initialize the 4 variables above by iterating over the fields
     for (Field field in widget.fields) {
       controllers[field.id] = TextEditingController();
       keys[field.id] = GlobalKey<FormFieldState>();
@@ -96,10 +94,10 @@ class ValidatedFormState extends State<ValidatedForm> {
     }
   });
 
-  /// Retrieve the text within the specified form
+  /// Retrieve the text within the specified field
   String text(String fieldId) => controllers[fieldId]!.text;
 
-  /// Return whether the input given to the specified form is valid
+  /// Return whether the input given to the specified field is valid
   /// 
   /// The given field displays a red error message if not
   bool validate(String fieldId) => keys[fieldId]!.currentState!.validate();
@@ -120,46 +118,47 @@ class ValidatedFormState extends State<ValidatedForm> {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        for (Field field in widget.fields) 
-          Column(
-            children: [
-              TextFormField(
-                controller: controllers[field.id]!,
-                key: keys[field.id],
-                onChanged: (String? inputtedValue) => removeErrors(),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                validator: field.validator,
-                obscureText: obscurity[field.id]!,
-                decoration: InputDecoration(
-                  helperText: "",
-                  errorMaxLines: 3,
-                  border: OutlineInputBorder(),
-                  hintText: field.id,
-                  errorText: fieldErrors[field.id]?.errorText,
-                  prefixIcon: field.prefixIcon,
-                  counter: field.counter,
-                  suffixIcon: field.obscure ?
-                    Padding(
-                      padding: const EdgeInsets.all(5),
-                      child: IconButton.outlined(
-                        color: ColorScheme.of(context).primary,
-                        icon: obscurity[field.id]! ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
-                        onPressed: () => setState(() => obscurity[field.id] = !obscurity[field.id]!),
-                        style: IconButton.styleFrom(
-                          side: BorderSide(
-                            width: 2.0, 
-                            color: ColorScheme.of(context).primary,
-                          ), 
-                        ),
+      children: [for (Field field in widget.fields) 
+        Column(
+          children: [
+            TextFormField(
+              controller: controllers[field.id]!,
+              key: keys[field.id],
+              onChanged: (String? inputtedValue) => removeErrors(),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: field.validator,
+              obscureText: obscurity[field.id]!,
+              decoration: InputDecoration(
+                helperText: "",
+                errorMaxLines: 3,
+                border: OutlineInputBorder(),
+                hintText: field.id,
+                errorText: fieldErrors[field.id]?.errorText,
+                prefixIcon: field.prefixIcon,
+                counter: field.counter,
+                // if obscure is enabled from the start, show an eye button to (de)obscure the field
+                suffixIcon: field.obscure ?
+                  Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: IconButton.outlined(
+                      color: ColorScheme.of(context).primary,
+                      icon: obscurity[field.id]! ? Icon(Icons.visibility_off) : Icon(Icons.visibility),
+                      onPressed: () => setState(() => obscurity[field.id] = !obscurity[field.id]!),
+                      style: IconButton.styleFrom(
+                        side: BorderSide(
+                          width: 2.0, 
+                          color: ColorScheme.of(context).primary,
+                        ), 
                       ),
-                    )
-                  : null
-                ),
+                    ),
+                  )
+                : null
               ),
-              field.id != widget.fields.last.id ? SizedBox(height: 5) : SizedBox.shrink() // spacing between fields if not last field
-            ]
-          ),
+            ),
+            // if not last field, add spacing (this spaces the fields in the form apart)
+            field.id != widget.fields.last.id ? SizedBox(height: 5) : SizedBox.shrink()
+          ]
+        ),
       ] 
     );
   }

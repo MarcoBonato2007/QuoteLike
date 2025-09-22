@@ -1,14 +1,16 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:quotelike/signup_page.dart';
+import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/signup_page.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/validated_form.dart';
-import 'package:quotelike/utilities/rate_limiting.dart';
-import 'package:quotelike/utilities/auth_functions.dart' as auth_functions;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -132,19 +134,6 @@ class _LoginPageState extends State<LoginPage>{
       })
     );
 
-    final signupButton = StandardTextButton(
-      "Sign up",
-      () {
-        loginFormKey.currentState!.removeErrors();
-        Navigator.push(
-          context, 
-          MaterialPageRoute(builder: (context) => Scaffold(
-            body: SignupPage()
-          ))
-        );
-      }
-    );
-
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15),
       child: Column(
@@ -163,7 +152,16 @@ class _LoginPageState extends State<LoginPage>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Don't have an account?"),
-              signupButton
+              StandardTextButton( // This button redirects the user to the signup page
+                "Sign up",
+                () {
+                  loginFormKey.currentState!.removeErrors();
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
+                  );
+                }
+              )
             ]
           ),
           SizedBox(height: 10),

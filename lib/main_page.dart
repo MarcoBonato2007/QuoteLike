@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:quotelike/explore_page.dart';
-import 'package:quotelike/suggestion_creation_page.dart';
-import 'package:quotelike/settings_page.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
-import 'package:quotelike/utilities/rate_limiting.dart';
 
+import 'package:provider/provider.dart';
+
+import 'package:quotelike/explore_page.dart';
+import 'package:quotelike/settings_page.dart';
+import 'package:quotelike/suggestion_creation_page.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+
+/// This is the page shown to a logged in and email verified user
+/// 
+/// This class wraps the settings page and explore page together
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -16,7 +21,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int currentPageIndex = 0; // 0 means explore, 1 means settings
   
-  final explorePageKey = GlobalKey<ExplorePageState>(); // used to access the paging controller inside explore page
+  /// Used to access the paging controller inside explore page
+  final explorePageKey = GlobalKey<ExplorePageState>();
 
   @override
   Widget build(BuildContext context) {    
@@ -26,7 +32,7 @@ class _MainPageState extends State<MainPage> {
         child: IndexedStack(
           index: currentPageIndex,
           children: [
-            Scaffold(
+            Scaffold( // explore page scaffold
               appBar: AppBar(
                 title: Text("Explore"),
                 centerTitle: true,
@@ -45,7 +51,7 @@ class _MainPageState extends State<MainPage> {
                       builder: (context) => SuggestionCreationPage()
                     ),
                   ),
-                  FloatingActionButton( // button to refresh the scrollable list of quotes
+                  FloatingActionButton( // button to refresh the list of quotes in explore_page.dart
                     elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
                     backgroundColor: ColorScheme.of(context).primary,
                     foregroundColor: ColorScheme.of(context).surface,
@@ -58,7 +64,7 @@ class _MainPageState extends State<MainPage> {
               ),
               body: ExplorePage(key: explorePageKey)
             ),
-            Scaffold(
+            Scaffold( // settings page scaffold
               appBar: AppBar(
                 title: Text("Settings"),
                 centerTitle: true,

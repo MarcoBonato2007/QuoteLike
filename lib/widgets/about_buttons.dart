@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/standard_widgets.dart';
+
 // This file contains a privacy policy button widget and an about button widget
+
+/// The privacy policy button redirects the user to a github markdown file containing the policy
 class PrivacyPolicyButton extends StatelessWidget {
   const PrivacyPolicyButton({super.key});
 
@@ -29,13 +33,14 @@ class AboutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StandardSettingsButton("About", Icon(Icons.info), () async {
+      String appVersion = (await PackageInfo.fromPlatform()).version;
       if (context.mounted) {
         showAboutDialog(
-          context: context,
+          context: context, // no clue why my parser gives me an error here, even though there's a mounted check
           applicationName: "QuoteLike",
           applicationIcon: Icon(Icons.format_quote),
           children: [Text("QuoteLike is an app where you can scroll a collection of quotes, and find those you like.")],
-          applicationVersion: (await PackageInfo.fromPlatform()).version,
+          applicationVersion: appVersion,
         );            
       }
     });

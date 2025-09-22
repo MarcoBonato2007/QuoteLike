@@ -1,9 +1,9 @@
-
 // ignore_for_file: non_constant_identifier_names
 
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'package:quotelike/utilities/enums.dart';
 
 DateTime lastAction = DateTime(2000); // 1st jan 2000 represents never
@@ -16,7 +16,8 @@ void throttledFunc(int throttleTimeMs, Function() func) async {
 }
 
 final storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
-/// Rate limits are per-email, stored in a json-formatted string
+
+/// Rate limits are per-id, stored in a json-formatted string
 class RateLimit {
   final String id;
   final Duration cooldown;
@@ -39,7 +40,7 @@ class RateLimit {
 
     Map<String, dynamic> timestampsJson = jsonDecode(timestampsJsonString);
     if (timestampsJson[identifier] == null) {
-      // if new email encountered, add it
+      // if new identifier encountered, add it
       await setTimestamp(identifier, reset: true);
       timestampsJson[identifier] = DateTime(0).toString();
     }

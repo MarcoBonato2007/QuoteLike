@@ -1,14 +1,17 @@
+import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:quotelike/utilities/enums.dart';
-import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
-import 'package:quotelike/utilities/rate_limiting.dart';
 import 'package:readmore/readmore.dart';
 
+import 'package:quotelike/utilities/enums.dart';
+import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/utilities/rate_limiting.dart';
+import 'package:quotelike/utilities/theme_settings.dart';
+
+/// A quote card is the widgets that the user scrolls in explore_page.dart
 class QuoteCard extends StatefulWidget {
   final String id;
   final String quote;
@@ -65,8 +68,8 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
           transaction.delete(likeDocRef);
         }
         else {
-          Map<String, dynamic> newData = {}; // needed to prevent a dumb firestore error
-          transaction.set(likeDocRef, newData);
+          Map<String, dynamic> empty = {}; // passing {} directly into transaction.set() will cause an error
+          transaction.set(likeDocRef, empty);
         }
       }).timeout(Duration(seconds: 5));
     });
@@ -74,6 +77,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     return error;
   }
 
+  /// Formats likes into a string (e.g. 500 -> "500", 1200 -> "1.2k", 2300000 -> "2.3m")
   String formatLikes() {
     int effectiveLikes = widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0);
     if (effectiveLikes >= 1000000) {
@@ -136,6 +140,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
         ),
       ),
     );
+
     SizedBox quoteBox = SizedBox(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,

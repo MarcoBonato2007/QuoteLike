@@ -1,15 +1,18 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart' hide Filter;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
+
 import 'package:quotelike/utilities/enums.dart';
-import 'package:quotelike/widgets/dropdown.dart';
 import 'package:quotelike/utilities/globals.dart';
+import 'package:quotelike/widgets/dropdown.dart';
 import 'package:quotelike/widgets/quote_card.dart';
 
+/// The explore page is used to scroll the quotes collection
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 

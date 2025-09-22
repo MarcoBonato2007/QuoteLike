@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
+
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
@@ -70,7 +71,6 @@ Future<ErrorCode?> signup(String email, String password) async {
 
   final log = Logger("signup() in auth_functions.dart");
 
-  // Create the user in firebase auth
   ErrorCode? error = await firebaseErrorHandler(log, () async {
     await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: email,

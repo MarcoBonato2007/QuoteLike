@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// A button to swap the theme between light and dark modes
 class SwapThemeButton extends StatefulWidget {
