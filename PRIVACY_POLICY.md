@@ -74,7 +74,7 @@ This data is collected using a third party service: https://firebase.google.com/
 
 Each crash report contains information on the device the crash took place on, containing:
 - The operating system the crash took place on (e.g. Android 16)
-- Whether the device is "rooted"
+- Whether the device is "rooted" (see https://en.wikipedia.org/wiki/Rooting_(Android))
 - The name of the device the crash took place on
 - The current orientation of the device
 - The amount of free RAM on the device
