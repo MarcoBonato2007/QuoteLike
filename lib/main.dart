@@ -108,18 +108,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish  
-  // add logging to all error things, add error checks everywhere (all firebase/firestore uses, use .then().catchError())
-  // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // test losing network connection at random times, how does the program react?
-  // Research other good practices
-  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
+// Polish
+  // fix deprecation warnings when building
   // fix the failed to get service from broker error
-  // fix failed to get service from broker error
+  // lots of code cleanup, make it better, try finding built-in alternatives to things
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
+  // test losing network connection at random times, how does the program react?
+  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
 
   // Update the readme (include info on how to get started)
   // Check https://docs.flutter.dev/deployment/android
+  // make sure all todos are done (check android folder files)
   // change the appcheck to AndroidProvider.playIntegrity
   // use --obfuscate and --split-debug when building to make it harder to reverse engineer
   // Launch it and test there. Really try to break it.
