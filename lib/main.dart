@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -20,7 +19,9 @@ import 'package:quotelike/utilities/theme_settings.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity
+  );
   await logEvent(Event.APP_OPEN);
   
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError; // report errors
@@ -109,12 +110,21 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
+  // TODO: massive issue. What to do about the in and not in limits?
+  // If doing liked, iterate over the liked quotes and get each one individually (better than nothing).
+  // remove not liked (what else can u do bruh??)
+
+  // TODO: think about trying to implement a random sort
+    // you need to try to make it so that you don't repeat / miss out on quotes
+
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
+
+  // fix app check debug tokens not showing up in console
+  // reactivate app check
+  
   // test losing network connection at random times, how does the program react?
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
-
-  // think: do you need to fix the deprecation warnings?
 
   // Update the readme (include info on how to get started)
   // Check https://docs.flutter.dev/deployment/android

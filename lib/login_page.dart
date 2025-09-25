@@ -23,7 +23,7 @@ class _LoginPageState extends State<LoginPage>{
   // The key used to access the form containing the email & password fields
   final loginFormKey = GlobalKey<ValidatedFormState>();
   final Field emailField = EmailField("Email");
-  late final Field passwordField;
+  late Field passwordField;
   
   /// This is used instead of auth_functions.forgotPassword()
   Future<void> forgotPassword(String email) async {

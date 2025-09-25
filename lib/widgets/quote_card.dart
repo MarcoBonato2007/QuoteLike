@@ -59,10 +59,9 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     ErrorCode? error = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
         final likeDocSnapshot = await transaction.get(likeDocRef);
-        final quoteDocSnapshot = await transaction.get(quoteDocRef);
         transaction.update( // update the likes on the quote doc
           quoteDocRef, 
-          {"likes": quoteDocSnapshot["likes"] + (userLikedQuote ? 1 : -1)}
+          {"likes": FieldValue.increment(userLikedQuote ? 1 : -1)}
         );
         if (likeDocSnapshot.exists) { // create/delete the liked quote doc
           transaction.delete(likeDocRef);
@@ -73,6 +72,15 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
         }
       }).timeout(Duration(seconds: 5));
     });
+
+    if (error == null) {
+      if (userLikedQuote) {
+        likedQuotes.add(widget.id);
+      }
+      else {
+        likedQuotes.remove(widget.id);
+      }
+    }
 
     return error;
   }

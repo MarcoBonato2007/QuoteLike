@@ -9,7 +9,7 @@ import 'package:quotelike/utilities/theme_settings.dart';
 class Dropdown extends StatelessWidget {
   final BuildContext context;
   final GlobalKey<FormFieldState> fieldKey;
-  final List<Map<String, String>> options;
+  final List<Map<String, dynamic>> options; // maps the name of an option to a map containing "name", "label" and "value"
   final String hintText;
   final double width;
   final Icon? icon;
@@ -49,8 +49,8 @@ class Dropdown extends StatelessWidget {
         }).toList();
       },
       items: options.map((option) {
-        return DropdownMenuItem<String>(
-          value: option["name"],
+        return DropdownMenuItem<dynamic>( // the value's type should be a Filter or Sort enum
+          value: option["value"],
           child: Text(option["label"]!)
         );
       }).toList()

@@ -51,7 +51,7 @@ enum Filter {
 }
 
 enum Sort {
-  RANDOM("Random", "Random"),
+  NONE("None", "None"),
   RECENT("Recent", "Recently added"),
   MOST_LIKED("Most liked", "Most liked"),
   LEAST_LIKED("Least liked", "Least liked"); 

@@ -138,6 +138,53 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget changeEmailButton = StandardSettingsButton("Change email", Icon(Icons.email), () => showConfirmationDialog(
+      "Confirm email change",
+      StandardElevatedButton(
+        "Change email", 
+        () async {
+          emailFormKey.currentState!.removeErrors();
+          if (emailFormKey.currentState!.validate(emailField.id)) {
+            await changeEmail(emailFormKey.currentState!.text(emailField.id));
+          }
+        }
+      ),
+      warningText: "Maximum 1 email change / day. Make sure the email is spelled correctly.",
+      body: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: ValidatedForm(
+          key: emailFormKey,
+          [emailField],
+        ),
+      )
+    ));
+
+    Widget resetPasswordButton = StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showConfirmationDialog(
+      "Confirm password reset",
+      StandardElevatedButton(
+        "Reset password", 
+        () async => await forgotPassword()
+      ),
+      warningText: 'Maximum once per hour'
+    ));
+
+    Widget logoutButton = StandardSettingsButton("Log out", Icon(Icons.logout), () => showConfirmationDialog( // show confirmation dialog
+      "Confirm log out",
+      StandardElevatedButton(
+        "Log out", 
+        () async => await signout()
+      )          
+    ));
+
+    Widget deleteAccountButton = StandardSettingsButton("Delete account", Icon(Icons.delete), () => showConfirmationDialog( // show confirmation dialog
+      "Confirm account deletion",
+      StandardElevatedButton( // add back button
+        "Delete account", 
+        () async => await deleteUser()
+      ),
+      warningText: "This is non-reversible"
+    ));
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -152,49 +199,10 @@ class _SettingsPageState extends State<SettingsPage> {
           )
         ),
         SizedBox(height: 5),
-        StandardSettingsButton("Change email", Icon(Icons.email), () => showConfirmationDialog(
-          "Confirm email change",
-          StandardElevatedButton(
-            "Change email", 
-            () async {
-              emailFormKey.currentState!.removeErrors();
-              if (emailFormKey.currentState!.validate(emailField.id)) {
-                await changeEmail(emailFormKey.currentState!.text(emailField.id));
-              }
-            }
-          ),
-          warningText: "Maximum 1 email change / day. Make sure the email is spelled correctly.",
-          body: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            child: ValidatedForm(
-              key: emailFormKey,
-              [emailField],
-            ),
-          )
-        )),
-        StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showConfirmationDialog(
-          "Confirm password reset",
-          StandardElevatedButton(
-            "Reset password", 
-            () async => await forgotPassword()
-          ),
-          warningText: 'Maximum once per hour'
-        )),
-        StandardSettingsButton("Log out", Icon(Icons.logout), () => showConfirmationDialog( // show confirmation dialog
-          "Confirm log out",
-          StandardElevatedButton(
-            "Log out", 
-            () async => await signout()
-          )          
-        )),
-        StandardSettingsButton("Delete account", Icon(Icons.delete), () => showConfirmationDialog( // show confirmation dialog
-          "Confirm account deletion",
-          StandardElevatedButton( // add back button
-            "Delete account", 
-            () async => await deleteUser()
-          ),
-          warningText: "This is non-reversible"
-        )),
+        changeEmailButton,
+        resetPasswordButton,
+        logoutButton,
+        deleteAccountButton,
         SwapThemeButton(),
         PrivacyPolicyButton(),
         AboutButton()

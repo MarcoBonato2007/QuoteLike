@@ -1,9 +1,7 @@
-import 'dart:math';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart' hide Filter;
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:logging/logging.dart';
 
@@ -12,7 +10,6 @@ import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/widgets/dropdown.dart';
 import 'package:quotelike/widgets/quote_card.dart';
 
-/// The explore page is used to scroll the quotes collection
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
@@ -21,18 +18,17 @@ class ExplorePage extends StatefulWidget {
 }
 
 class ExplorePageState extends State<ExplorePage> {
-  final sortKey = GlobalKey<FormFieldState>();
+  final sortKey = GlobalKey<FormFieldState>(); // passed into the sort dropdown()
   final filterKey = GlobalKey<FormFieldState>();
   DocumentSnapshot? lastQuoteDoc;
-
-  late Future<(ErrorCode?, List<String>)> likedQuotesFuture;
-  List<String>? likedQuotes;
   late final PagingController<int, QuoteCard> pagingController;
+
+  late Future<ErrorCode?> setLikedQuotesFuture;
 
   @override
   void initState() {
     super.initState();
-    likedQuotesFuture = getLikedQuotes(); // put here to avoid explore page rebuilding if you go back to it from settings
+    setLikedQuotesFuture = setLikedQuotes(); // this avoids rebuilding the page when swapping back from settings
     pagingController = PagingController<int, QuoteCard>(
       getNextPageKey: (state) => state.lastPageIsEmpty ? null : 0,
       fetchPage: (pageKey) async {
@@ -60,11 +56,17 @@ class ExplorePageState extends State<ExplorePage> {
     super.dispose();
   }
 
-  /// Gets a list of liked user quotes, this is passed into ExplorePage() in a FutureBuilder()
-  Future<(ErrorCode?, List<String>)> getLikedQuotes() async {
+  void refresh() {
+    pagingController.refresh();
+    setLikedQuotesFuture = setLikedQuotes(); // do NOT put this inside setState, will cause error
+    setState(() {});
+  }
+
+  /// Set the liked quotes global. This is used to future build the list of quotes.
+  Future<ErrorCode?> setLikedQuotes() async {
     final log = Logger("getLikedQuotes() in main_page.dart");
 
-    List<String> likedQuotes = [];    
+    likedQuotes = {}; 
     ErrorCode? error = await firebaseErrorHandler(log, () async {
       await FirebaseFirestore.instance
         .collection("users")
@@ -77,7 +79,7 @@ class ExplorePageState extends State<ExplorePage> {
       }).timeout(Duration(seconds: 5));
     });
 
-    return (error, likedQuotes);
+    return error;
   }
 
   /// Gets the next 10 quotes to scroll after lastQuoteDoc
@@ -85,41 +87,34 @@ class ExplorePageState extends State<ExplorePage> {
   /// Returns any errors along with the list of new quotes
   Future<(ErrorCode?, List<QuoteCard>)> getNextQuotesToScroll() async {
     final log = Logger("getNextQuotesToScroll() in explore_page.dart");
-    ErrorCode? error;
 
-    String? filter = filterKey.currentState!.value ?? Filter.NONE.name;
-    String? sort = sortKey.currentState!.value ?? Sort.RANDOM.name;
+    Filter filter = filterKey.currentState!.value ?? Filter.NONE;
+    Sort sort = sortKey.currentState!.value ?? Sort.NONE;
 
     Query query = FirebaseFirestore.instance.collection("quotes");
     List<QuoteCard> queryResults = [];
-    
-    if (filter == Filter.LIKED.name) {
-      query = query.where(FieldPath.documentId, whereIn: likedQuotes);
-    }
-    else if (filter == Filter.NOT_LIKED.name) {
-      query = query.where(FieldPath.documentId, whereNotIn: likedQuotes);
-    }
-    
-    if (sort == Sort.RANDOM.name) {
-      // We generate a random string, and match documents with id's after this
-      // This isn't a truly random sort, but is a good alternative
-      // We may get repeated quotes using this method, and may even match 0 quotes on accident
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      final random = Random();
-      String randomId = String.fromCharCodes(Iterable.generate(20, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
-      query = query.where(FieldPath.documentId, isGreaterThanOrEqualTo: randomId);
-    }
-    else if (sort == Sort.MOST_LIKED.name) {
-      query = query.orderBy("likes", descending: true);
-    }
-    else if (sort == Sort.LEAST_LIKED.name) {
-      query = query.orderBy("likes", descending: false);
-    }
-    else if (sort == Sort.RECENT.name) {
-      query = query.orderBy("creation", descending: true);
+
+    ErrorCode? error;
+
+    if (filter == Filter.LIKED && likedQuotes.isEmpty) {
+      return (error, queryResults);
     }
 
-    if (lastQuoteDoc != null && sort != Sort.RANDOM.name) {
+    query = switch (filter) {
+      Filter.LIKED => query.where(FieldPath.documentId, whereIn: likedQuotes),
+      // if liked qutoes is empty then we don't change the query (cannot pass an empty list to whereNotIn)
+      Filter.NOT_LIKED => likedQuotes.isNotEmpty ? query.where(FieldPath.documentId, whereNotIn: likedQuotes): query,
+      Filter.NONE => query,
+    };
+
+    query = switch (sort) {
+      Sort.MOST_LIKED => query.orderBy("likes", descending: true),
+      Sort.LEAST_LIKED => query.orderBy("likes", descending: false),
+      Sort.RECENT => query.orderBy("creation", descending: true),
+      Sort.NONE => query,
+    };
+
+    if (lastQuoteDoc != null) {
       query = query.startAfterDocument(lastQuoteDoc!);
     }
   
@@ -135,7 +130,7 @@ class ExplorePageState extends State<ExplorePage> {
             doc["author"], 
             doc["creation"], 
             doc["likes"],
-            likedQuotes!.contains(doc.id)
+            likedQuotes.contains(doc.id)
           ));
         }
       }).timeout(Duration(seconds: 5))     
@@ -144,25 +139,42 @@ class ExplorePageState extends State<ExplorePage> {
     return (error, queryResults);
   }
 
-  void refresh() {
-    if (likedQuotes != null) {
-      pagingController.refresh();
-    }
-    else {
-      likedQuotes = null;
-      likedQuotesFuture = getLikedQuotes();
-      setState(() {});
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    List<Map<String, String>> filterOptions = [
-      for (Filter filter in Filter.values) {"name": filter.name, "label": filter.label}
+    List<Map<String, dynamic>> filterOptions = [
+      for (Filter filter in Filter.values) {"name": filter.name, "label": filter.label, "value": filter}
     ];
-    List<Map<String, String>> sortOptions = [
-      for (Sort sort in Sort.values) {"name": sort.name, "label": sort.label}
+    List<Map<String, dynamic>> sortOptions = [
+      for (Sort sort in Sort.values) {"name": sort.name, "label": sort.label, "value": sort}
     ];
+
+    Widget quoteList = FutureBuilder( // we future build the quote list after we set the list of liked quotes
+      future: setLikedQuotesFuture,
+      builder: (context, asyncSnapshot) {
+        if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        else if (asyncSnapshot.hasError || (asyncSnapshot.hasData && asyncSnapshot.data != null)) {
+          ErrorCode error = asyncSnapshot.data ?? ErrorCode.UNKNOWN_ERROR;
+          return Padding(
+            padding: const EdgeInsets.only(left: 15, right: 15), // for some reason, i have to re-add the padding here
+            child: Center(child: Text("${error.errorText} Try reloading (bottom right button).")),
+          );
+        }
+        else {
+          return PagingListener(
+            controller: pagingController,
+            builder: (context, state, fetchNextPage) => PagedListView(
+              state: state,
+              fetchNextPage: fetchNextPage,
+              builderDelegate: PagedChildBuilderDelegate<QuoteCard>(
+                itemBuilder: (context, item, index) => item
+              )
+            )
+          );
+        }
+      }
+    );
 
     return Column(
       children: [
@@ -176,33 +188,7 @@ class ExplorePageState extends State<ExplorePage> {
           ]
         ),
         SizedBox(height: 10),
-        Expanded(
-          child: FutureBuilder(
-            future: likedQuotesFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              }
-              else if (snapshot.hasError || (snapshot.hasData && snapshot.data!.$1 != null)) {
-                ErrorCode? error = snapshot.data!.$1 ?? ErrorCode.UNKNOWN_ERROR;
-                return Center(child: Text("${error.errorText}. Try reloading (bottom right button)."));
-              }
-              else {
-                likedQuotes = snapshot.data!.$2;
-                return PagingListener(
-                  controller: pagingController,
-                  builder: (context, state, fetchNextPage) => PagedListView(
-                    state: state,
-                    fetchNextPage: fetchNextPage,
-                    builderDelegate: PagedChildBuilderDelegate<QuoteCard>(
-                      itemBuilder: (context, item, index) => item
-                    )
-                  )
-                );
-              }
-            }
-          ),
-        ),
+        Expanded(child: quoteList),
       ]
     );
   }

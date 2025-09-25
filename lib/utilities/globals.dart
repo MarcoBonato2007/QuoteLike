@@ -15,6 +15,12 @@ import 'package:quotelike/utilities/enums.dart';
 /// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// We maintain a local copy of the list of liked quotes.
+/// This avoids having to constantly re-fetch this from the server.
+/// 
+/// This is initialized in explore_page.dart, and updated in quote_card.dart
+Set<String> likedQuotes = {};
+
 /// Shows a non user dismissable CircularProgressIndicator() overlay
 void showLoadingIcon() {
   showDialog(
@@ -105,7 +111,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       "requires-recent-login" || "user-token-expired" => ErrorCode.REQUIRES_RECENT_LOGIN,
       _ => ErrorCode.UNKNOWN_ERROR
     };
-
+    print(e);
     log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
   }
   on TimeoutException catch (e, stackTrace) {

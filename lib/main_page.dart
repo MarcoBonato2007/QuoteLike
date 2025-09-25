@@ -25,52 +25,56 @@ class _MainPageState extends State<MainPage> {
   final explorePageKey = GlobalKey<ExplorePageState>();
 
   @override
-  Widget build(BuildContext context) {    
+  Widget build(BuildContext context) {  
+    Widget settingsPage = Scaffold( // settings page scaffold
+      appBar: AppBar(
+        title: Text("Settings"),
+        centerTitle: true,
+      ),
+      body: SettingsPage()
+    );
+
+    Widget explorePage = Scaffold(
+      body: ExplorePage(key: explorePageKey),
+      appBar: AppBar(
+        title: Text("Explore"),
+        centerTitle: true,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          FloatingActionButton( // button to suggest a quote
+            elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
+            backgroundColor: ColorScheme.of(context).primary,
+            foregroundColor: ColorScheme.of(context).surface,
+            child: Icon(Icons.add),
+            onPressed: () => showDialog(
+              context: context, 
+              builder: (context) => SuggestionCreationPage()
+            ),
+          ),
+          FloatingActionButton( // button to refresh the list of quotes in explore_page.dart
+            elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
+            backgroundColor: ColorScheme.of(context).primary,
+            foregroundColor: ColorScheme.of(context).surface,
+            child: Icon(Icons.refresh),
+            onPressed: () => throttledFunc(1000, () {
+              explorePageKey.currentState!.refresh();                  
+            })
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.only(left: 15, right: 15),
         child: IndexedStack(
           index: currentPageIndex,
           children: [
-            Scaffold( // explore page scaffold
-              appBar: AppBar(
-                title: Text("Explore"),
-                centerTitle: true,
-              ),
-              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              floatingActionButton: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  FloatingActionButton( // button to suggest a quote
-                    elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
-                    backgroundColor: ColorScheme.of(context).primary,
-                    foregroundColor: ColorScheme.of(context).surface,
-                    child: Icon(Icons.add),
-                    onPressed: () => showDialog(
-                      context: context, 
-                      builder: (context) => SuggestionCreationPage()
-                    ),
-                  ),
-                  FloatingActionButton( // button to refresh the list of quotes in explore_page.dart
-                    elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
-                    backgroundColor: ColorScheme.of(context).primary,
-                    foregroundColor: ColorScheme.of(context).surface,
-                    child: Icon(Icons.refresh),
-                    onPressed: () => throttledFunc(1000, () {
-                      explorePageKey.currentState!.refresh();                  
-                    })
-                  ),
-                ],
-              ),
-              body: ExplorePage(key: explorePageKey)
-            ),
-            Scaffold( // settings page scaffold
-              appBar: AppBar(
-                title: Text("Settings"),
-                centerTitle: true,
-              ),
-              body: SettingsPage()
-            )
+            explorePage,
+            settingsPage
           ]
         ),
       ),
