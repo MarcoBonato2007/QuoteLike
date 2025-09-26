@@ -111,7 +111,6 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
       "requires-recent-login" || "user-token-expired" => ErrorCode.REQUIRES_RECENT_LOGIN,
       _ => ErrorCode.UNKNOWN_ERROR
     };
-    print(e);
     log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
   }
   on TimeoutException catch (e, stackTrace) {

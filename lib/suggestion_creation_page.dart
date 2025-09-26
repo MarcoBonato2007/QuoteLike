@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
-import 'package:logging/logging.dart';
-
 import 'package:quotelike/utilities/enums.dart';
+import 'package:quotelike/utilities/db_functions.dart' as db_functions;
 import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/utilities/rate_limiting.dart';
 import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
@@ -22,22 +18,14 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
   late Field contentField;
   late Field authorField;
 
+  /// This is used instead of db_functions.addSuggestion()
   Future<void> addSuggestion() async {
     showLoadingIcon();
-    final log = Logger("addSuggestion() in quote_creation_page.dart");
-
-    ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.uid);
-    error ??= await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance.collection("suggestions").add({
-        "content": quoteCreationFormKey.currentState!.text(contentField.id),
-        "author": quoteCreationFormKey.currentState!.text(authorField.id),
-        "user": FirebaseAuth.instance.currentUser!.uid
-      }).timeout(Duration(seconds: 5));
-      await logEvent(Event.ADD_SUGGESTION);
-    });
-    if (error == null) {
-      await RateLimits.QUOTE_SUGGESTION.setTimestamp(FirebaseAuth.instance.currentUser!.uid);
-    }
+    
+    ErrorCode? error = await db_functions.addSuggestion(
+      quoteCreationFormKey.currentState!.text(contentField.id),
+      quoteCreationFormKey.currentState!.text(authorField.id)
+    );
 
     hideLoadingIcon();
 

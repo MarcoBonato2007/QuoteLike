@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:readmore/readmore.dart';
 
+import 'package:quotelike/utilities/db_functions.dart' as db_functions;
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
@@ -45,44 +44,19 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  /// Likes the quote if already liked, or removes the like if not
-  Future<ErrorCode?> likeQuote() async {
-    final log = Logger("likeQuote() in quote_card.dart");
-
-    DocumentReference quoteDocRef = FirebaseFirestore.instance.collection("quotes").doc(widget.id);
-    DocumentReference likeDocRef = FirebaseFirestore.instance // this doc exists if the user liked this quote
-      .collection("users")
-      .doc(FirebaseAuth.instance.currentUser!.uid)
-      .collection("liked_quotes")
-    .doc(widget.id);
-
-    ErrorCode? error = await firebaseErrorHandler(log, () async {
-      await FirebaseFirestore.instance.runTransaction(timeout: Duration(seconds: 5), (transaction) async {
-        final likeDocSnapshot = await transaction.get(likeDocRef);
-        transaction.update( // update the likes on the quote doc
-          quoteDocRef, 
-          {"likes": FieldValue.increment(userLikedQuote ? 1 : -1)}
-        );
-        if (likeDocSnapshot.exists) { // create/delete the liked quote doc
-          transaction.delete(likeDocRef);
-        }
-        else {
-          Map<String, dynamic> empty = {}; // passing {} directly into transaction.set() will cause an error
-          transaction.set(likeDocRef, empty);
-        }
-      }).timeout(Duration(seconds: 5));
-    });
-
-    if (error == null) {
-      if (userLikedQuote) {
-        likedQuotes.add(widget.id);
-      }
-      else {
-        likedQuotes.remove(widget.id);
-      }
+  /// This is used instead of db_functions.likeQuote()
+  Future<void> likeQuote() async {
+    showLoadingIcon();
+    setState(() => userLikedQuote = !userLikedQuote);
+    ErrorCode? error = await db_functions.likeQuote(widget.id, isDislike: !userLikedQuote);
+    if (error != null && mounted) {
+      showToast(
+        context, 
+        "${error.errorText} Your ${userLikedQuote ? "" : "dis"}like may not have registered.", 
+        Duration(seconds: 5)
+      );
     }
-
-    return error;
+    hideLoadingIcon();
   }
 
   /// Formats likes into a string (e.g. 500 -> "500", 1200 -> "1.2k", 2300000 -> "2.3m")
@@ -121,19 +95,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     );
 
     InkWell likeButton = InkWell(
-      onTap: () async => throttledFunc(1000, () async {
-        showLoadingIcon();
-        setState(() => userLikedQuote = !userLikedQuote);
-        ErrorCode? error = await likeQuote();
-        if (error != null && context.mounted) {
-          showToast(
-            context, 
-            "${error.errorText} Your ${userLikedQuote ? "" : "dis"}like may not have registered.", 
-            Duration(seconds: 5)
-          );
-        }
-        hideLoadingIcon();
-      }),
+      onTap: () async => throttledFunc(1000, () async => await likeQuote()),
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: EdgeInsetsGeometry.all(5),

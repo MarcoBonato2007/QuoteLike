@@ -42,8 +42,8 @@ enum Event {
 
 enum Filter {
   NONE("None", "None"),
-  LIKED("Liked", "Liked by you"),
-  NOT_LIKED("Not liked", "Not liked by you");
+  // NOT_LIKED("Not liked", "Not liked by you"),
+  LIKED("Liked", "Liked by you");
 
   final String name; // shown inside the dropdown field
   final String label; // shown in the dropdown selection menu
@@ -52,6 +52,7 @@ enum Filter {
 
 enum Sort {
   NONE("None", "None"),
+  RANDOM("Random", "Random"),
   RECENT("Recent", "Recently added"),
   MOST_LIKED("Most liked", "Most liked"),
   LEAST_LIKED("Least liked", "Least liked"); 

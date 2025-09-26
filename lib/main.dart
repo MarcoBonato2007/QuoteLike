@@ -109,13 +109,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish
-  // TODO: massive issue. What to do about the in and not in limits?
-  // If doing liked, iterate over the liked quotes and get each one individually (better than nothing).
-  // remove not liked (what else can u do bruh??)
+// Polish  
+  // TODO: test the querying very heavily! especially combining random/liked sorting.
+  // do performance thoughts (where is log n? where is n log n? better to use just sets? think about it.)
 
-  // TODO: think about trying to implement a random sort
-    // you need to try to make it so that you don't repeat / miss out on quotes
+  // put query code into db_functions.dart
+
+  // add scrollbar to explore page
+
+  // think about how to inmplement a filter for not liked
 
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
