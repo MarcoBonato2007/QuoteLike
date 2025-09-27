@@ -110,24 +110,25 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
-  // TODO: test the querying very heavily! especially combining random/liked sorting.
-  // do performance thoughts (where is log n? where is n log n? better to use just sets? think about it.)
+  // 28th september
+  // THINK!!!: you may need to make everything lower/uppercase for a startswith searchbar
+  // make a searchbar for starts with (better than nothing am i right?)
+    // IMPORTANT: grab it from the old code! you basically had it already implemented.
+    // make sure your hint text says starts with
 
-  // put query code into db_functions.dart
-
-  // add scrollbar to explore page
-
-  // think about how to inmplement a filter for not liked
-
-  // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // Just generally re-read through all the code. What can you improve? what can you not repeat?
-
+  // 29 september
   // fix app check debug tokens not showing up in console
   // reactivate app check
+
+  // 30 september
+  // lots of code cleanup, make it better, try finding built-in alternatives to things
+  // split things into classes, modularize a lot
+  // Just generally re-read through all the code. What can you improve? what can you not repeat?
   
   // test losing network connection at random times, how does the program react?
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
 
+  // october
   // Update the readme (include info on how to get started)
   // Check https://docs.flutter.dev/deployment/android
   // make sure all todos are done (check android folder files)

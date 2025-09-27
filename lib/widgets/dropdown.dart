@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:provider/provider.dart';
+import 'package:quotelike/explore_page.dart';
 
 import 'package:quotelike/utilities/theme_settings.dart';
 
@@ -12,17 +12,17 @@ class Dropdown extends StatelessWidget {
   final List<Map<String, dynamic>> options; // maps the name of an option to a map containing "name", "label" and "value"
   final String hintText;
   final double width;
-  final Icon? icon;
-  final PagingController? pagingController; // call .refresh after changing sort or filter
+  final Icon icon;
+  final GlobalKey<ExplorePageState> explorePageKey; // call .refresh after changing sort or filter
   const Dropdown(
     this.context,
     this.fieldKey,
     this.options,
     this.hintText,
     this.width,
+    this.icon,
+    this.explorePageKey,
     {
-      this.icon,
-      this.pagingController,
       super.key
     }
   );
@@ -36,7 +36,7 @@ class Dropdown extends StatelessWidget {
       elevation: Provider.of<ThemeSettings>(context, listen: false).elevation.toInt(),
       hint: Text(hintText),
       onChanged: (dynamic newValue) {
-        pagingController?.refresh();
+        explorePageKey.currentState!.refresh();
       },
       decoration: InputDecoration(
         prefixIcon: icon,

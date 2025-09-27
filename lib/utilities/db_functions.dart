@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Filter;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
 
@@ -10,18 +10,15 @@ import 'package:quotelike/utilities/rate_limiting.dart';
 /// 
 /// Only call this for logged in users
 Future<ErrorCode?> setLikedQuotes() async {
-  final log = Logger("getLikedQuotes() in main_page.dart");
+  final log = Logger("setLikedQuotes() in db_functions.dart");
 
-  likedQuotes.clear(); 
   ErrorCode? error = await firebaseErrorHandler(log, () async {
     await FirebaseFirestore.instance
       .collection("users")
       .doc(FirebaseAuth.instance.currentUser!.uid)
       .collection("liked_quotes")
     .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
-      for (DocumentSnapshot doc in querySnapshot.docs) {
-        likedQuotes.add(doc.id);
-      }          
+      likedQuotes = querySnapshot.docs.map((e) => e.id).toSet();    
     }).timeout(Duration(seconds: 5));
   });
 
@@ -32,7 +29,7 @@ Future<ErrorCode?> setLikedQuotes() async {
 /// 
 /// Only call this for logged in users
 Future<ErrorCode?> addSuggestion(String content, String author) async {
-  final log = Logger("addSuggestion() in quote_creation_page.dart");
+  final log = Logger("addSuggestion() in db_functions.dart");
 
   ErrorCode? error = await RateLimits.QUOTE_SUGGESTION.testCooldown(FirebaseAuth.instance.currentUser!.uid);
   error ??= await firebaseErrorHandler(log, () async {
@@ -54,7 +51,7 @@ Future<ErrorCode?> addSuggestion(String content, String author) async {
 /// 
 /// Only call this for logged in users
 Future<ErrorCode?> likeQuote(String quoteId, {bool isDislike = false}) async {
-  final log = Logger("likeQuote() in quote_card.dart");
+  final log = Logger("likeQuote() in db_functions.dart");
 
   DocumentReference quoteDocRef = FirebaseFirestore.instance.collection("quotes").doc(quoteId);
   DocumentReference likeDocRef = FirebaseFirestore.instance // this doc exists if the user liked this quote

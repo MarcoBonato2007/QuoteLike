@@ -35,7 +35,7 @@ class _MainPageState extends State<MainPage> {
     );
 
     Widget explorePage = Scaffold(
-      body: ExplorePage(key: explorePageKey),
+      body: ExplorePage(explorePageKey, key: explorePageKey),
       appBar: AppBar(
         title: Text("Explore"),
         centerTitle: true,
@@ -60,7 +60,7 @@ class _MainPageState extends State<MainPage> {
             foregroundColor: ColorScheme.of(context).surface,
             child: Icon(Icons.refresh),
             onPressed: () => throttledFunc(1000, () {
-              explorePageKey.currentState!.refresh();                  
+              explorePageKey.currentState!.refresh();
             })
           ),
         ],

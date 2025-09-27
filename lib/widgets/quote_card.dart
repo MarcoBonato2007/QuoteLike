@@ -16,16 +16,14 @@ class QuoteCard extends StatefulWidget {
   final String quote;
   final String author;
   final Timestamp creation;
-  final int likes;
-  final bool isLiked;
-  const QuoteCard(this.id, this.quote, this.author, this.creation, this.likes, this.isLiked, {super.key});
+  final int likes; // this is the amount of likes excluding any user likes
+  const QuoteCard(this.id, this.quote, this.author, this.creation, this.likes, {super.key});
 
   @override
   State<QuoteCard> createState() => _QuoteCardState();
 }
 
 class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
-  late bool userLikedQuote;
   late final AnimationController animationController;
 
   @override
@@ -34,7 +32,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
       duration: Duration(milliseconds: 300),
       vsync: this,
     )..forward();
-    userLikedQuote = widget.isLiked;
+
     super.initState();
   }
 
@@ -47,21 +45,25 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
   /// This is used instead of db_functions.likeQuote()
   Future<void> likeQuote() async {
     showLoadingIcon();
-    setState(() => userLikedQuote = !userLikedQuote);
-    ErrorCode? error = await db_functions.likeQuote(widget.id, isDislike: !userLikedQuote);
-    if (error != null && mounted) {
+    ErrorCode? error = await db_functions.likeQuote(widget.id, isDislike: likedQuotes.contains(widget.id));
+
+    if (error == null) {
+      setState(() {});
+    }
+    else if (mounted) {
       showToast(
         context, 
-        "${error.errorText} Your ${userLikedQuote ? "" : "dis"}like may not have registered.", 
+        "${error.errorText} Your ${likedQuotes.contains(widget.id) ? "dis" : ""}like may not have registered.", 
         Duration(seconds: 5)
       );
     }
+
     hideLoadingIcon();
   }
 
   /// Formats likes into a string (e.g. 500 -> "500", 1200 -> "1.2k", 2300000 -> "2.3m")
   String formatLikes() {
-    int effectiveLikes = widget.likes + (userLikedQuote ? 1 : 0) - (widget.isLiked ? 1 : 0);
+    int effectiveLikes = widget.likes + (likedQuotes.contains(widget.id) ? 1 : 0);
     if (effectiveLikes >= 1000000) {
       return "${(effectiveLikes/1000000).toStringAsFixed(1)}m";
     }
@@ -75,7 +77,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    Widget likeIcon = !userLikedQuote ? Icon(Icons.favorite_border, color: ColorScheme.of(context).onSurface)
+    Widget likeIcon = !likedQuotes.contains(widget.id) ? Icon(Icons.favorite_border, color: ColorScheme.of(context).onSurface)
     : ScaleTransition(
       alignment: Alignment.bottomCenter,
       scale: TweenSequence<double>([
