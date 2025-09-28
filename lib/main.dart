@@ -34,7 +34,16 @@ void main() async {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     // Level is INFO for caught errors, WARNING for unknown auth caught errors, SEVERE for unknown firestore errors
-    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+    debugPrint(
+      """
+      Error has been logged
+      Level: ${record.level.name}
+      Logger: ${record.loggerName}
+      Time: ${record.time}
+      Message: ${record.message}
+      Error text: ${record.error}
+      """
+    );
   });
 
   // Get messages of user changes in the debug console
@@ -110,21 +119,12 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish  
-  // 28th september
-  // THINK!!!: you may need to make everything lower/uppercase for a startswith searchbar
-  // make a searchbar for starts with (better than nothing am i right?)
-    // IMPORTANT: grab it from the old code! you basically had it already implemented.
-    // make sure your hint text says starts with
-
   // 29 september
-  // fix app check debug tokens not showing up in console
-  // reactivate app check
-
-  // 30 september
   // lots of code cleanup, make it better, try finding built-in alternatives to things
   // split things into classes, modularize a lot
   // Just generally re-read through all the code. What can you improve? what can you not repeat?
   
+  // 30 september
   // test losing network connection at random times, how does the program react?
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
 
@@ -135,7 +135,12 @@ class _MyHomePageState extends State<MyHomePage> {
   // change the appcheck to AndroidProvider.playIntegrity
   // use --obfuscate and --split-debug when building to make it harder to reverse engineer
   // Launch it and test there. Really try to break it.
+  // is the startup issue still there?
 
-  // think aout the failed to get service from broker and deprecation errors
+  // Note: be VERY careful updating any packages or dependencies.
+  // In the past, this caused firebase to not print debug app check tokens (very annoying to fix!)
 
-  // In future: remember to update the version in pubspec.yaml
+  // In future: 
+    // try to fix the failed to get service from broker and deprecation errors
+    // add a search bar (would need to be starts with only, and has case sensitivity issues)
+    // remember to update the version in pubspec.yaml

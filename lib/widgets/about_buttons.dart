@@ -36,9 +36,9 @@ class AboutButton extends StatelessWidget {
       String appVersion = (await PackageInfo.fromPlatform()).version;
       if (context.mounted) {
         showAboutDialog(
-          context: context, // no clue why my parser gives me an error here, even though there's a mounted check
+          context: context,
           applicationName: "QuoteLike",
-          applicationIcon: Icon(Icons.format_quote),
+          applicationIcon: Image.asset("assets/icon.png", width: 75, height: 75),
           children: [Text("QuoteLike is an app where you can scroll a collection of quotes, and find those you like.")],
           applicationVersion: appVersion,
         );            
