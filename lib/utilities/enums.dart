@@ -40,24 +40,39 @@ enum Event {
 
 // Filter and Sort enums are used for the dropdown menus in explore_page.dart
 
-enum Filter {
-  NONE("None", "None"),
-  // NOT_LIKED("Not liked", "Not liked by you"),
-  LIKED("Liked", "Liked by you");
+sealed class DropdownOption {
+  /// The text shown inside the dropdown field
+  final String labelInField;
+  /// The text shown in the dropdown selection menu
+  final String labelInDropdown;
 
-  final String name; // shown inside the dropdown field
-  final String label; // shown in the dropdown selection menu
-  const Filter(this.name, this.label);
+  const DropdownOption(this.labelInField, this.labelInDropdown);
 }
 
-enum Sort {
+enum Filter implements DropdownOption {
+  NONE("None", "None"),
+  // NOT_LIKED("Not liked", "Not liked by you"), // this may be implemented in future
+  LIKED("Liked", "Liked by you");
+
+  @override
+  final String labelInField;
+  @override
+  final String labelInDropdown;
+  
+  const Filter(this.labelInField, this.labelInDropdown);
+}
+
+enum Sort implements DropdownOption {
   NONE("None", "None"),
   RANDOM("Random", "Random"),
   RECENT("Recent", "Recently added"),
   MOST_LIKED("Most liked", "Most liked"),
   LEAST_LIKED("Least liked", "Least liked"); 
 
-  final String name; // shown inside the dropdown field
-  final String label; // shown in the dropdown selection menu
-  const Sort(this.name, this.label);
+  @override
+  final String labelInField;
+  @override
+  final String labelInDropdown;
+
+  const Sort(this.labelInField, this.labelInDropdown);
 }

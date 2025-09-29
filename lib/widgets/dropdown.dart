@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:provider/provider.dart';
 import 'package:quotelike/explore_page.dart';
-
-import 'package:quotelike/utilities/theme_settings.dart';
+import 'package:quotelike/utilities/enums.dart';
 
 /// Used to make dropdown menus (used in explore_page.dart)
 class Dropdown extends StatelessWidget {
   final BuildContext context;
   final GlobalKey<FormFieldState> fieldKey;
-  final List<Map<String, dynamic>> options; // maps the name of an option to a map containing "name", "label" and "value"
+  final List<DropdownOption> options; // see utilities/enums.dart
   final String hintText;
   final double width;
   final Icon icon;
@@ -30,10 +28,7 @@ class Dropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DropdownButtonFormField mainWidget = DropdownButtonFormField(
-      isDense: true,
       key: fieldKey,
-      padding: EdgeInsetsGeometry.zero,
-      elevation: Provider.of<ThemeSettings>(context, listen: false).elevation.toInt(),
       hint: Text(hintText),
       onChanged: (dynamic newValue) {
         explorePageKey.currentState!.refresh();
@@ -45,13 +40,13 @@ class Dropdown extends StatelessWidget {
       ),
       selectedItemBuilder: (BuildContext context) {
         return options.map((option) {
-          return Text(option['name']!);
+          return Text(option.labelInField);
         }).toList();
       },
       items: options.map((option) {
-        return DropdownMenuItem<dynamic>( // the value's type should be a Filter or Sort enum
-          value: option["value"],
-          child: Text(option["label"]!)
+        return DropdownMenuItem<DropdownOption>( // the value's type should be a Filter or Sort enum
+          value: option,
+          child: Text(option.labelInDropdown)
         );
       }).toList()
     );

@@ -118,12 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish  
-  // 29 september
-  // lots of code cleanup, make it better, try finding built-in alternatives to things
-  // split things into classes, modularize a lot
-  // Just generally re-read through all the code. What can you improve? what can you not repeat?
-  
+// Polish
   // 30 september
   // test losing network connection at random times, how does the program react?
   // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).

@@ -45,6 +45,8 @@ class EmailField extends Field {
     },  
   );
 }
+
+/// The standardized widget for making an input form
 class ValidatedForm extends StatefulWidget {
   final List<Field> fields;
   const ValidatedForm(this.fields, {super.key});
@@ -118,6 +120,7 @@ class ValidatedFormState extends State<ValidatedForm> {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [for (Field field in widget.fields) 
         Column(
           children: [

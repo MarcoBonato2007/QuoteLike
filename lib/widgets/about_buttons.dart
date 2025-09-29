@@ -4,7 +4,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 
 // This file contains a privacy policy button widget and an about button widget
 
@@ -14,25 +13,31 @@ class PrivacyPolicyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StandardSettingsButton("Privacy policy", Icon(Icons.privacy_tip), () async {
-      final url = Uri.parse("https://github.com/MarcoBonato2007/QuoteLike/blob/main/PRIVACY_POLICY.md");
-      if (!await launchUrl(url) && context.mounted) {
-        showToast(
-          context, 
-          "test",
-          Duration(seconds: 3)
-        );
+    return ElevatedButton.icon(
+      label: Text("Privacy policy"), 
+      icon: Icon(Icons.privacy_tip), 
+      onPressed: () async {
+        final url = Uri.parse("https://github.com/MarcoBonato2007/QuoteLike/blob/main/PRIVACY_POLICY.md");
+        if (!await launchUrl(url) && context.mounted) {
+          showToast(
+            context, 
+            "test",
+            Duration(seconds: 3)
+          );
+        }
       }
-    });
+    );
   }
 }
 
+/// The about buttons shows a dialog containing the app name, description,
+/// version number and a list of licenses.
 class AboutButton extends StatelessWidget {
   const AboutButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return StandardSettingsButton("About", Icon(Icons.info), () async {
+    return ElevatedButton.icon(label: Text("About"), icon: Icon(Icons.info), onPressed: () async {
       String appVersion = (await PackageInfo.fromPlatform()).version;
       if (context.mounted) {
         showAboutDialog(

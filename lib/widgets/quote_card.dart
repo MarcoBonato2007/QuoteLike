@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
 import 'package:readmore/readmore.dart';
 
 import 'package:quotelike/utilities/db_functions.dart' as db_functions;
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
 
 /// A quote card is the widgets that the user scrolls in explore_page.dart
 class QuoteCard extends StatefulWidget {
@@ -140,7 +138,6 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
     );
 
     Card mainCard = Card(
-      elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
       child: Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 10, left: 15, right: 15),
         child: Row(

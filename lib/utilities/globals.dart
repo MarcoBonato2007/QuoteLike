@@ -10,12 +10,12 @@ import 'package:logging/logging.dart';
 
 import 'package:quotelike/utilities/enums.dart';
 
-// This file contains global functions and variablesused in various files
+// This file contains global functions and variables used in various files
 
 /// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-/// We maintain a local copy of the list of liked quotes.
+/// We maintain a local copy of the user's list of liked quotes.
 /// This avoids having to constantly re-fetch this from the server.
 /// 
 /// This is initialized in explore_page.dart, and updated in quote_card.dart
@@ -41,6 +41,8 @@ Future<void> logEvent(Event event) async {
   // instead we log failures to crashlytics
   await firebaseErrorHandler(log, useCrashlytics: true, () async {
     await switch (event) {
+      // for evens such as LOGIN or SIGN_UP we use the built-in logging methods
+      // otherwise we do a custom log using logEvent()
       Event.LOGIN => FirebaseAnalytics.instance.logLogin(
         parameters: {
           "uid": FirebaseAuth.instance.currentUser?.uid ?? "null",
@@ -76,7 +78,7 @@ Future<void> logErrorInCrashlytics(dynamic error, dynamic stackTrace, ErrorCode?
     await FirebaseCrashlytics.instance.recordError(
       error,
       stackTrace,
-      reason: '${log.name}: Error logged with crashlytics: $errorCode. ${error?.code == null ? "Not firebase error" : "Firebase code: ${error.code}"}',
+      reason: '${log.name}: Error logged with crashlytics: $errorCode. ${error?.code == null ? "Not firebase error." : "Firebase code: ${error.code}"}',
     );
   }
   catch (e, stackTrace) {
@@ -84,7 +86,7 @@ Future<void> logErrorInCrashlytics(dynamic error, dynamic stackTrace, ErrorCode?
   }
 }
 
-/// try excepts a function using firebase in some way, returns an error message (see enums.dart)
+/// try excepts a function using firebase in some way, returns an error code (see utilities/enums.dart)
 Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bool doNetworkCheck = true, bool useCrashlytics = false}) async {
   ErrorCode? errorCode;
   dynamic error, stack;
@@ -113,7 +115,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     };
     log.warning("${log.name}: Firebase unknown error. Code: ${e.code}", e, stackTrace);
   }
-  on TimeoutException catch (e, stackTrace) {
+  on TimeoutException catch (e, stackTrace) { // all firebase exceptions have a .timeout() for 5 seconds
     error = e;
     stack = stackTrace;
     log.info("${log.name}: Timeout caught error.", e, stackTrace);
@@ -141,7 +143,7 @@ Future<ErrorCode?> firebaseErrorHandler(Logger log, Function() firebaseFunc, {bo
     emailError = error; // in this case, only the email field gets an error
   }
   else if (error != null) {
-    // otherwise, the email field is highlighted and error is shown in password filed
+    // otherwise, the email field is highlighted and the error is shown in the password field
     emailError = ErrorCode.HIGHLIGHT_RED;
     passwordError = error;
   }
@@ -158,8 +160,6 @@ void showToast(BuildContext context, String message, Duration duration) {
     SnackBar(
       duration: duration,
       content: Text(message, textAlign: TextAlign.center),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: ColorScheme.of(context).primary,
     ),
     snackBarAnimationStyle: AnimationStyle(
       curve: Curves.fastOutSlowIn,

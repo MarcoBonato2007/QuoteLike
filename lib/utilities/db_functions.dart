@@ -18,7 +18,7 @@ Future<ErrorCode?> setLikedQuotes() async {
       .doc(FirebaseAuth.instance.currentUser!.uid)
       .collection("liked_quotes")
     .get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) async {
-      likedQuotes = querySnapshot.docs.map((e) => e.id).toSet();    
+      likedQuotes = querySnapshot.docs.map((doc) => doc.id).toSet();    
     }).timeout(Duration(seconds: 5));
   });
 
@@ -77,7 +77,7 @@ Future<ErrorCode?> likeQuote(String quoteId, {bool isDislike = false}) async {
     }).timeout(Duration(seconds: 5));
   });
 
-  if (error == null) {
+  if (error == null) { // if no error, we update the liked quotes global
     if (isDislike) {
       likedQuotes.remove(quoteId);
     }

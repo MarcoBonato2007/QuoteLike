@@ -6,7 +6,6 @@ import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
 class SignupPage extends StatefulWidget {
@@ -17,10 +16,10 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage>{
-  final signupFormKey = GlobalKey<ValidatedFormState>();
-  final Field emailField = EmailField("Email");
-  late final Field passwordField;
-  late final Field passwordConfirmField;
+  final _signupFormKey = GlobalKey<ValidatedFormState>();
+  final Field _emailField = EmailField("Email");
+  late Field _passwordField;
+  late Field _passwordConfirmField;
 
   /// This is used instead of auth_functions.signup()
   Future<void> signup(String email, String password) async {
@@ -39,17 +38,17 @@ class _SignupPageState extends State<SignupPage>{
       ErrorCode? newEmailError;
       ErrorCode? newPasswordError;
       (newEmailError, newPasswordError) = errorsForFields(error);
-      signupFormKey.currentState!.setError(emailField.id, newEmailError);
-      signupFormKey.currentState!.setError(passwordConfirmField.id, newPasswordError);
+      _signupFormKey.currentState!.setError(_emailField.id, newEmailError);
+      _signupFormKey.currentState!.setError(_passwordConfirmField.id, newPasswordError);
       if (newEmailError == ErrorCode.HIGHLIGHT_RED) { // If email field highlighted, password field highlighted
-        signupFormKey.currentState!.setError(passwordField.id, ErrorCode.HIGHLIGHT_RED);
+        _signupFormKey.currentState!.setError(_passwordField.id, ErrorCode.HIGHLIGHT_RED);
       }      
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    passwordField = Field(
+    _passwordField = Field(
       "Password",
       Icon(Icons.lock),
       true,
@@ -83,7 +82,7 @@ class _SignupPageState extends State<SignupPage>{
       },
     );
 
-    passwordConfirmField = Field(
+    _passwordConfirmField = Field(
       "Confirm password",
       Icon(Icons.lock),
       true,
@@ -91,7 +90,7 @@ class _SignupPageState extends State<SignupPage>{
         if (currentValue == "") {
           return "Please enter a password confirmation";
         }
-        else if (currentValue != signupFormKey.currentState!.text(passwordField.id)) {
+        else if (currentValue != _signupFormKey.currentState!.text(_passwordField.id)) {
           return "Passwords must match";
         }
         else {
@@ -101,32 +100,36 @@ class _SignupPageState extends State<SignupPage>{
     );
 
     final signupForm = ValidatedForm(
-      key: signupFormKey,
+      key: _signupFormKey,
       [
-        emailField,
-        passwordField,
-        passwordConfirmField
+        _emailField,
+        _passwordField,
+        _passwordConfirmField
       ]
     );
 
-    final signupButton = StandardElevatedButton(
-      "Sign up",
-      () => throttledFunc(2000, () async {
-        if (signupFormKey.currentState!.validateAll()) {
+    final signupButton = FilledButton(
+      child: Text("Sign up"),
+      onPressed: () => throttledFunc(2000, () async {
+        if (_signupFormKey.currentState!.validateAll()) {
           await signup(
-            signupFormKey.currentState!.text(emailField.id), 
-            signupFormKey.currentState!.text(passwordField.id), 
+            _signupFormKey.currentState!.text(_emailField.id), 
+            _signupFormKey.currentState!.text(_passwordField.id), 
           );
         }      
       }),
     );
 
+    // this button redirects the user back to the login page
+    final loginButton = TextButton(child: Text("Login"), onPressed: () => Navigator.of(context).pop());
+
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Sign up", style: TextStyle(fontSize: 30)),
+          Text("Sign up", style: TextStyle(fontSize: 30), textAlign: TextAlign.center),
           SizedBox(height: 15),
           signupForm,
           SizedBox(height: 5),
@@ -139,10 +142,10 @@ class _SignupPageState extends State<SignupPage>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Already have an account?"),
-              StandardTextButton("Login", () => Navigator.of(context).pop()) // redirect user back to login page
+              loginButton
             ]
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 8),
           SwapThemeButton(),
           PrivacyPolicyButton(),
           AboutButton()

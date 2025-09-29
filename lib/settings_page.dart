@@ -9,7 +9,6 @@ import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -20,8 +19,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final emailFormKey = GlobalKey<ValidatedFormState>(); // used when inputting an email to change to
-  final emailField = EmailField("New email");
+  final _emailFormKey = GlobalKey<ValidatedFormState>(); // used when inputting an email to change to
+  final _emailField = EmailField("New email");
 
   /// This is used instead of auth_functions.signout()
   Future<void> signout() async {
@@ -104,7 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void showConfirmationDialog(String title, StandardElevatedButton confirmButton, {Widget? body, String? warningText}) => showDialog(
+  void showConfirmationDialog(String title, FilledButton confirmButton, {Widget? body, String? warningText}) => showDialog(
     context: context,
     builder: (BuildContext context) => AlertDialog(
       title: Text(title, textAlign: TextAlign.center),
@@ -114,7 +113,7 @@ class _SettingsPageState extends State<SettingsPage> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          warningText != null ? RichText(
+          warningText != null ? RichText( // show warning text
             textAlign: TextAlign.center,
             text: TextSpan(
               style: DefaultTextStyle.of(context).style,
@@ -138,55 +137,44 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget changeEmailButton = StandardSettingsButton("Change email", Icon(Icons.email), () => showConfirmationDialog(
+    Widget changeEmailButton = ElevatedButton.icon(label: Text("Change email"), icon: Icon(Icons.email), onPressed: () => showConfirmationDialog(
       "Confirm email change",
-      StandardElevatedButton(
-        "Change email", 
-        () async {
-          emailFormKey.currentState!.removeErrors();
-          if (emailFormKey.currentState!.validate(emailField.id)) {
-            await changeEmail(emailFormKey.currentState!.text(emailField.id));
+      FilledButton(
+        child: Text("Change email"), 
+        onPressed: () async {
+          _emailFormKey.currentState!.removeErrors();
+          if (_emailFormKey.currentState!.validate(_emailField.id)) {
+            await changeEmail(_emailFormKey.currentState!.text(_emailField.id));
           }
         }
       ),
       warningText: "Maximum 1 email change / day. Make sure the email is spelled correctly.",
-      body: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        child: ValidatedForm(
-          key: emailFormKey,
-          [emailField],
-        ),
-      )
+      body: ValidatedForm(
+        key: _emailFormKey,
+        [_emailField],
+      ),
     ));
 
-    Widget resetPasswordButton = StandardSettingsButton("Forgot/reset password", Icon(Icons.key), () => showConfirmationDialog(
+    Widget resetPasswordButton = ElevatedButton.icon(label: Text("Forgot/reset password"), icon: Icon(Icons.key), onPressed: () => showConfirmationDialog(
       "Confirm password reset",
-      StandardElevatedButton(
-        "Reset password", 
-        () async => await forgotPassword()
-      ),
+      FilledButton(child: Text("Reset password"), onPressed: () async => await forgotPassword()),
       warningText: 'Maximum once per hour'
     ));
 
-    Widget logoutButton = StandardSettingsButton("Log out", Icon(Icons.logout), () => showConfirmationDialog( // show confirmation dialog
+    Widget logoutButton = ElevatedButton.icon(label: Text("Log out"), icon: Icon(Icons.logout), onPressed: () => showConfirmationDialog( // show confirmation dialog
       "Confirm log out",
-      StandardElevatedButton(
-        "Log out", 
-        () async => await signout()
-      )          
+      FilledButton(child: Text("Log out"), onPressed: () async => await signout())          
     ));
 
-    Widget deleteAccountButton = StandardSettingsButton("Delete account", Icon(Icons.delete), () => showConfirmationDialog( // show confirmation dialog
+    Widget deleteAccountButton = ElevatedButton.icon(label: Text("Delete account"), icon: Icon(Icons.delete), onPressed: () => showConfirmationDialog( // show confirmation dialog
       "Confirm account deletion",
-      StandardElevatedButton( // add back button
-        "Delete account", 
-        () async => await deleteUser()
-      ),
+      FilledButton(child: Text("Delete account"), onPressed: () async => await deleteUser()),
       warningText: "This is non-reversible"
     ));
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Center( // a read-only text form field showing the user's email
           child: TextFormField(

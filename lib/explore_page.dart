@@ -19,45 +19,45 @@ class ExplorePage extends StatefulWidget {
 }
 
 class ExplorePageState extends State<ExplorePage> {
-  final sortKey = GlobalKey<FormFieldState>(); // passed into the sort dropdown()
-  final filterKey = GlobalKey<FormFieldState>();
-  Filter getFilter() => filterKey.currentState?.value ?? Filter.NONE;
-  Sort getSort() => sortKey.currentState?.value ?? Sort.NONE;
+  final _sortKey = GlobalKey<FormFieldState>();
+  final _filterKey = GlobalKey<FormFieldState>();
+  Filter getFilter() => _filterKey.currentState?.value ?? Filter.NONE;
+  Sort getSort() => _sortKey.currentState?.value ?? Sort.NONE;
 
-  final quoteQuerier = QuoteQuerier(); // handles querying for quotes to scroll
-  late Future<ErrorCode?> setLikedQuotesFuture; // used to prevent explore page refreshing after going back from settings
-  late final PagingController<int, QuoteCard> pagingController;  
+  final _quoteQuerier = QuoteQuerier(); // handles querying for quotes to scroll
+  late Future<ErrorCode?> _setLikedQuotesFuture; // used to prevent explore page refreshing after going back from settings
+  late final PagingController<int, QuoteCard> _pagingController; // initialized in initState()
 
-  bool buildError = false;
+  bool _buildError = false; // stores if there's an error in the future builder (see build() and refresh())
 
   @override
   void initState() {
-    super.initState();
+    _setLikedQuotesFuture = db_functions.setLikedQuotes(); // this avoids rebuilding the page when swapping back from settings
 
-    setLikedQuotesFuture = db_functions.setLikedQuotes(); // this avoids rebuilding the page when swapping back from settings
-
-    pagingController = PagingController<int, QuoteCard>(
+    _pagingController = PagingController<int, QuoteCard>(
       getNextPageKey: (state) => state.lastPageIsEmpty ? null : 0,
       fetchPage: makeQuery
     );
+
+    super.initState();
   }
 
   @override
   void dispose() {
-    pagingController.dispose();
+    _pagingController.dispose();
     super.dispose();
   }
 
   void refresh() {
-    if (buildError) {
+    if (_buildError) {
       // if there was an error with future builder, rebuild it
-      setLikedQuotesFuture = db_functions.setLikedQuotes();
+      _setLikedQuotesFuture = db_functions.setLikedQuotes();
       setState(() {});   
     }
     else {
       // otherwise, perform a normal refresh
-      quoteQuerier.refresh(getFilter(), getSort());
-      pagingController.refresh();
+      _quoteQuerier.refresh(getFilter(), getSort());
+      _pagingController.refresh();
     }
   }
 
@@ -65,7 +65,7 @@ class ExplorePageState extends State<ExplorePage> {
   Future<List<QuoteCard>> makeQuery(int pageKey) async {
     ErrorCode? error;
     List<DocumentSnapshot> newQuotes;
-    (error, newQuotes) = await quoteQuerier.makeQuery(getFilter(), getSort());
+    (error, newQuotes) = await _quoteQuerier.makeQuery(getFilter(), getSort());
 
     List<QuoteCard> quoteCards = newQuotes.map((docSnapshot) => QuoteCard(
       docSnapshot.id, 
@@ -83,22 +83,15 @@ class ExplorePageState extends State<ExplorePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filterOptions = [
-      for (Filter filter in Filter.values) {"name": filter.name, "label": filter.label, "value": filter}
-    ];
-    List<Map<String, dynamic>> sortOptions = [
-      for (Sort sort in Sort.values) {"name": sort.name, "label": sort.label, "value": sort}
-    ];
-    
+  Widget build(BuildContext context) {    
     Widget quoteList = FutureBuilder( // we future build the quote list after we set the list of liked quotes
-      future: setLikedQuotesFuture,
+      future: _setLikedQuotesFuture,
       builder: (context, asyncSnapshot) {
         if (asyncSnapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
         else if (asyncSnapshot.hasError || (asyncSnapshot.hasData && asyncSnapshot.data != null)) {
-          buildError = true;
+          _buildError = true;
           ErrorCode error = asyncSnapshot.data ?? ErrorCode.UNKNOWN_ERROR;
           return Padding(
             padding: const EdgeInsets.only(left: 15, right: 15), // for some reason, i have to re-add the padding here
@@ -107,9 +100,9 @@ class ExplorePageState extends State<ExplorePage> {
         }
         else {
           final scrollController = ScrollController();
-          buildError = false;
+          _buildError = false;
           return PagingListener(
-            controller: pagingController,
+            controller: _pagingController,
             builder: (context, state, fetchNextPage) => Scrollbar(
               controller: scrollController,
               thumbVisibility: true,
@@ -136,8 +129,8 @@ class ExplorePageState extends State<ExplorePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: (MediaQuery.of(context).size.width-15*2-171*2)/3,
           children: [
-            Dropdown(context, filterKey, filterOptions, "Filter", 171, Icon(Icons.filter_list), widget.explorePageKey),
-            Dropdown(context, sortKey, sortOptions, "Sort", 171, Icon(Icons.sort), widget.explorePageKey),
+            Dropdown(context, _filterKey, Filter.values, "Filter", 171, Icon(Icons.filter_list), widget.explorePageKey),
+            Dropdown(context, _sortKey, Sort.values, "Sort", 171, Icon(Icons.sort), widget.explorePageKey),
           ]
         ),
         SizedBox(height: 10),

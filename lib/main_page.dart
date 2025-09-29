@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:provider/provider.dart';
-
 import 'package:quotelike/explore_page.dart';
 import 'package:quotelike/settings_page.dart';
 import 'package:quotelike/suggestion_creation_page.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
-import 'package:quotelike/utilities/theme_settings.dart';
 
 /// This is the page shown to a logged in and email verified user
 /// 
@@ -19,15 +16,16 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int currentPageIndex = 0; // 0 means explore, 1 means settings
+  int _currentPageIndex = 0; // 0 means explore, 1 means settings
   
   /// Used to access the paging controller inside explore page
-  final explorePageKey = GlobalKey<ExplorePageState>();
+  final _explorePageKey = GlobalKey<ExplorePageState>();
 
   @override
   Widget build(BuildContext context) {  
-    Widget settingsPage = Scaffold( // settings page scaffold
+    Widget settingsPage = Scaffold(
       appBar: AppBar(
+        forceMaterialTransparency: true,
         title: Text("Settings"),
         centerTitle: true,
       ),
@@ -35,8 +33,9 @@ class _MainPageState extends State<MainPage> {
     );
 
     Widget explorePage = Scaffold(
-      body: ExplorePage(explorePageKey, key: explorePageKey),
+      body: ExplorePage(_explorePageKey, key: _explorePageKey),
       appBar: AppBar(
+        forceMaterialTransparency: true,
         title: Text("Explore"),
         centerTitle: true,
       ),
@@ -45,9 +44,6 @@ class _MainPageState extends State<MainPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           FloatingActionButton( // button to suggest a quote
-            elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
-            backgroundColor: ColorScheme.of(context).primary,
-            foregroundColor: ColorScheme.of(context).surface,
             child: Icon(Icons.add),
             onPressed: () => showDialog(
               context: context, 
@@ -55,12 +51,9 @@ class _MainPageState extends State<MainPage> {
             ),
           ),
           FloatingActionButton( // button to refresh the list of quotes in explore_page.dart
-            elevation: Provider.of<ThemeSettings>(context, listen: false).elevation,
-            backgroundColor: ColorScheme.of(context).primary,
-            foregroundColor: ColorScheme.of(context).surface,
             child: Icon(Icons.refresh),
             onPressed: () => throttledFunc(1000, () {
-              explorePageKey.currentState!.refresh();
+              _explorePageKey.currentState!.refresh();
             })
           ),
         ],
@@ -71,7 +64,7 @@ class _MainPageState extends State<MainPage> {
       body: Padding(
         padding: EdgeInsets.only(left: 15, right: 15),
         child: IndexedStack(
-          index: currentPageIndex,
+          index: _currentPageIndex,
           children: [
             explorePage,
             settingsPage
@@ -79,10 +72,10 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentPageIndex,
+        currentIndex: _currentPageIndex,
         onTap: (int? newPageIndex) {
           if (newPageIndex != null) {
-            setState(() => currentPageIndex = newPageIndex);
+            setState(() => _currentPageIndex = newPageIndex);
           }
         },
         items: [

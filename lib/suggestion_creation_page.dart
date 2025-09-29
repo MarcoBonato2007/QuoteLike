@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/db_functions.dart' as db_functions;
 import 'package:quotelike/utilities/globals.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
 class SuggestionCreationPage extends StatefulWidget {
@@ -14,17 +13,17 @@ class SuggestionCreationPage extends StatefulWidget {
 }
 
 class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
-  final quoteCreationFormKey = GlobalKey<ValidatedFormState>();
-  late Field contentField;
-  late Field authorField;
+  final _suggestionFormKey = GlobalKey<ValidatedFormState>();
+  late Field _contentField;
+  late Field _authorField;
 
   /// This is used instead of db_functions.addSuggestion()
   Future<void> addSuggestion() async {
     showLoadingIcon();
     
     ErrorCode? error = await db_functions.addSuggestion(
-      quoteCreationFormKey.currentState!.text(contentField.id),
-      quoteCreationFormKey.currentState!.text(authorField.id)
+      _suggestionFormKey.currentState!.text(_contentField.id),
+      _suggestionFormKey.currentState!.text(_authorField.id)
     );
 
     hideLoadingIcon();
@@ -43,7 +42,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
 
   @override
   Widget build(BuildContext context) {
-    contentField = Field(
+    _contentField = Field(
       "Quote content",
       Icon(Icons.format_quote),
       false,
@@ -60,7 +59,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
       }  
     );
 
-    authorField = Field(
+    _authorField = Field(
       "Author",
       Icon(Icons.person),
       false,
@@ -78,8 +77,17 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
     );
 
     final quoteCreationForm = ValidatedForm(
-      key: quoteCreationFormKey,
-      [contentField, authorField]
+      key: _suggestionFormKey,
+      [_contentField, _authorField]
+    );
+
+    final suggestQuoteButton = FilledButton(
+      child: Text("Suggest quote"),
+      onPressed: () async {
+        if (_suggestionFormKey.currentState!.validateAll()) {
+          await addSuggestion();
+        }
+      }
     );
 
     return AlertDialog(
@@ -87,14 +95,7 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
         BackButton(),
-        StandardElevatedButton(
-          "Suggest quote",
-          () async {
-            if (quoteCreationFormKey.currentState!.validateAll()) {
-              await addSuggestion();
-            }
-          }
-        ),
+        suggestQuoteButton
       ],
       content: Column(
         mainAxisSize: MainAxisSize.min,

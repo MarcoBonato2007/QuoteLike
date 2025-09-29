@@ -9,7 +9,6 @@ import 'package:quotelike/utilities/globals.dart';
 import 'package:quotelike/utilities/rate_limiting.dart';
 import 'package:quotelike/utilities/theme_settings.dart';
 import 'package:quotelike/widgets/about_buttons.dart';
-import 'package:quotelike/widgets/standard_widgets.dart';
 import 'package:quotelike/widgets/validated_form.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,9 +20,9 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage>{
   // The key used to access the form containing the email & password fields
-  final loginFormKey = GlobalKey<ValidatedFormState>();
-  final Field emailField = EmailField("Email");
-  late Field passwordField;
+  final _loginFormKey = GlobalKey<ValidatedFormState>();
+  final Field _emailField = EmailField("Email");
+  late Field _passwordField;
   
   /// This is used instead of auth_functions.forgotPassword()
   Future<void> forgotPassword(String email) async {
@@ -47,8 +46,8 @@ class _LoginPageState extends State<LoginPage>{
       // set the errors for the email and password fields
       ErrorCode? newEmailError, newPasswordError;
       (newEmailError, newPasswordError) = errorsForFields(error);
-      loginFormKey.currentState!.setError(emailField.id, newEmailError);
-      loginFormKey.currentState!.setError(passwordField.id, newPasswordError);      
+      _loginFormKey.currentState!.setError(_emailField.id, newEmailError);
+      _loginFormKey.currentState!.setError(_passwordField.id, newPasswordError);      
     }
   }
 
@@ -84,14 +83,14 @@ class _LoginPageState extends State<LoginPage>{
     // if a verified user logged in, there is a screen swap and current state is now invalid
     // so this if statement is needed
     if (mounted) {
-      loginFormKey.currentState!.setError(emailField.id, newEmailError);
-      loginFormKey.currentState!.setError(passwordField.id, newPasswordError);     
+      _loginFormKey.currentState!.setError(_emailField.id, newEmailError);
+      _loginFormKey.currentState!.setError(_passwordField.id, newPasswordError);     
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    passwordField = Field(
+    _passwordField = Field(
       "Password",
       Icon(Icons.lock),
       true,
@@ -103,43 +102,55 @@ class _LoginPageState extends State<LoginPage>{
           return null;
         }
       },
-      counter: StandardTextButton(
-        "Forgot password? Max 1/hour",
-        () => throttledFunc(2000, () async {
-          loginFormKey.currentState!.removeErrors();
-          if (loginFormKey.currentState!.validate(emailField.id)) {
-            await forgotPassword(loginFormKey.currentState!.text(emailField.id));
+      counter: TextButton(
+        child: Text("Forgot password? Max 1/hour"),
+        onPressed: () => throttledFunc(2000, () async {
+          _loginFormKey.currentState!.removeErrors();
+          if (_loginFormKey.currentState!.validate(_emailField.id)) {
+            await forgotPassword(_loginFormKey.currentState!.text(_emailField.id));
           }
         })
       ),
     );
 
     final loginForm = ValidatedForm(
-      key: loginFormKey, 
+      key: _loginFormKey, 
       [
-        emailField,
-        passwordField
+        _emailField,
+        _passwordField
       ]
     );
 
-    final loginButton = StandardElevatedButton(
-      "Login",
-      () => throttledFunc(2000, () async {
-        if (loginFormKey.currentState!.validateAll()) {
+    final loginButton = FilledButton(
+      child: Text("Login"),
+      onPressed: () => throttledFunc(2000, () async {
+        if (_loginFormKey.currentState!.validateAll()) {
           await login(
-            loginFormKey.currentState!.text(emailField.id), 
-            loginFormKey.currentState!.text(passwordField.id)
+            _loginFormKey.currentState!.text(_emailField.id), 
+            _loginFormKey.currentState!.text(_passwordField.id)
           );
         }  
       })
     );
 
+    final signupButton = TextButton( // This button redirects the user to the signup page
+      child: Text("Sign up"),
+      onPressed: () {
+        _loginFormKey.currentState!.removeErrors();
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
+        );
+      }
+    );
+
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Log in", style: TextStyle(fontSize: 30)),
+          Text("Log in", style: TextStyle(fontSize: 30), textAlign: TextAlign.center),
           SizedBox(height: 15),
           loginForm,
           SizedBox(height: 5),
@@ -152,19 +163,10 @@ class _LoginPageState extends State<LoginPage>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Don't have an account?"),
-              StandardTextButton( // This button redirects the user to the signup page
-                "Sign up",
-                () {
-                  loginFormKey.currentState!.removeErrors();
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => Scaffold(body: SignupPage()))
-                  );
-                }
-              )
+              signupButton
             ]
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 8),
           SwapThemeButton(),
           PrivacyPolicyButton(),
           AboutButton()
