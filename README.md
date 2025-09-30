@@ -11,7 +11,10 @@ Email/password login must be enabled in Firebase auth. Please ensure that email 
 <img width="329" height="288" alt="image" src="https://github.com/user-attachments/assets/af193e66-604a-40a8-9d63-097cb0f5995f" />
   
 ### App check setup
-If you don't want to use app check, remove the package and remove the line  ```await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);```  from main.dart.
+If you don't want to use app check, remove the package and remove the line ```
+await FirebaseAppCheck.instance.activate(
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity
+);``` from main.dart.
 
 Otherwise, please set up app check in the Firebase console. Remember: if you want to launch the project, input your debug token (this will show up in the debug console) into your appcheck debug tokens in the firebase console.
 
@@ -55,29 +58,35 @@ service cloud.firestore {
   	match /quotes/{quoteDoc} {
     	// allow any logged in and verified user to get a quote
     	allow get: if 
-      	request.auth != null 
-      	&& request.auth.token.email_verified;
+      		request.auth != null 
+      		&& request.auth.token.email_verified;
         
       	// allow any logged in, verified user to list max 20 quotes
     	allow list: if 
-      	request.auth != null 
-      	&& request.auth.token.email_verified
-        && request.query.limit <= 20;
+      		request.auth != null 
+      		&& request.auth.token.email_verified
+        	&& request.query.limit <= 20;
         
-      // Allow updates only if:
-      	// The user is logged in and verified
-        // They are updating the likes of a quote only
-        // The likes are changing by 1 or -1
-      allow update: if
-      	request.auth != null
-        && request.auth.token.email_verified
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])
-        && request.resource.data.likes is int
-        && (
-        	request.resource.data.likes - resource.data.likes == 1
-          || request.resource.data.likes - resource.data.likes == -1
-        )
-      ;
+      	// Allow updates only if:
+      		// The user is logged in and verified
+        	// They are updating the likes of a quote only
+        	// The likes are changing by 1 or -1 and the user hasn't or has liked the quote already
+		allow update: if
+		request.auth != null
+		&& request.auth.token.email_verified
+		&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])
+		&& request.resource.data.likes is int
+		&& (
+			(
+			request.resource.data.likes-resource.data.likes == 1
+			&& !exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
+			)
+		|| 
+			(
+			request.resource.data.likes-resource.data.likes == -1
+			&& exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
+			)
+		);
     }
     
     // for suggestions, allow creation only if:
@@ -104,10 +113,10 @@ service cloud.firestore {
       		// The document is being created for the currently logged in user
       		// There are no fields being added
     	allow create: if
-      	request.auth != null
-        && request.auth.token.email_verified
-        && userDoc == request.auth.uid
-        && request.resource.data.keys().size() == 0;
+      		request.auth != null
+        	&& request.auth.token.email_verified
+        	&& userDoc == request.auth.uid
+        	&& request.resource.data.keys().size() == 0;
 			
     	match /liked_quotes/{likedQuoteDoc} {        
 	        // Allow listing liked quotes only if:
@@ -115,8 +124,8 @@ service cloud.firestore {
 	          	// The current user is reading their own liked quotes
 	      	allow read: if 
 	        	request.auth != null
-	          && request.auth.token.email_verified
-	          && userDoc == request.auth.uid;
+	          	&& request.auth.token.email_verified
+	          	&& userDoc == request.auth.uid;
 	        
 	      	// Allow create only if:
 	        	// The current user is logged in and verified
@@ -125,18 +134,18 @@ service cloud.firestore {
 	          	// The id of the document represents an existing quote
 	      	allow create: if 
 	        	request.auth != null
-	          && request.auth.token.email_verified
-	          && userDoc == request.auth.uid
-	          && request.resource.data.keys().size() == 0
-	          && exists(/databases/$(database)/documents/quotes/$(request.resource.id));
+	          	&& request.auth.token.email_verified
+	          	&& userDoc == request.auth.uid
+	          	&& request.resource.data.keys().size() == 0
+	          	&& exists(/databases/$(database)/documents/quotes/$(request.resource.id));
 	          
 	        // Allow delete only if:
 	        	// The current user is logged in and verified
 	          	// The current user is updating their own liked quotes
 	      	allow delete: if 
-	        	request.auth != null
-	          && request.auth.token.email_verified
-	          && userDoc == request.auth.uid;
+				request.auth != null
+	          	&& request.auth.token.email_verified
+	          	&& userDoc == request.auth.uid;
       }
     }
   }
