@@ -61,6 +61,23 @@ class ExplorePageState extends State<ExplorePage> {
     }
   }
 
+  /// Not all filters and sorts are compatible.
+  /// This function resets either the filter or sort dropdown if an incompatibility is found.
+  void checkFilterSortCompatibility(bool isNewSort) { // isNewSort is false if a filter is being set
+    Filter filter = getFilter();
+    Sort sort = getSort();
+
+    // Filter.LIKED only supports RANDOM and NONE filters.
+    if (filter == Filter.LIKED && sort != Sort.RANDOM && sort != Sort.NONE) {
+      if (isNewSort) { // if the sort field has been set, reset the filter
+        _filterKey.currentState!.reset();
+      }
+      else { // otherwise, the filter field has been set, so reset the sort
+        _sortKey.currentState!.reset();
+      }
+    }
+  }
+
   /// This is used instead of quote_querier.makeQuery()
   Future<List<QuoteCard>> makeQuery(int pageKey) async {
     ErrorCode? error;
@@ -76,7 +93,7 @@ class ExplorePageState extends State<ExplorePage> {
     )).toList();
 
     if (error != null) {
-      showToast(context, error.errorText, Duration(seconds: 3));
+      showToast(context, "${error.errorText} Try reloading (bottom right button).", Duration(seconds: 3));
     }
     
     return quoteCards;
@@ -129,8 +146,8 @@ class ExplorePageState extends State<ExplorePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: (MediaQuery.of(context).size.width-15*2-171*2)/3,
           children: [
-            Dropdown(context, _filterKey, Filter.values, "Filter", 171, Icon(Icons.filter_list), widget.explorePageKey),
-            Dropdown(context, _sortKey, Sort.values, "Sort", 171, Icon(Icons.sort), widget.explorePageKey),
+            Dropdown(context, _filterKey, Filter.values, Filter.NONE, "Filter", 171, Icon(Icons.filter_list), widget.explorePageKey),
+            Dropdown(context, _sortKey, Sort.values, Sort.NONE, "Sort", 171, Icon(Icons.sort), widget.explorePageKey),
           ]
         ),
         SizedBox(height: 10),

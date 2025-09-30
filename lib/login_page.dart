@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage>{
         }
       },
       counter: TextButton(
-        child: Text("Forgot password? Max 1/hour"),
+        child: Text("Forgot password?"),
         onPressed: () => throttledFunc(2000, () async {
           _loginFormKey.currentState!.removeErrors();
           if (_loginFormKey.currentState!.validate(_emailField.id)) {

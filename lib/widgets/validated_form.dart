@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:email_validator/email_validator.dart';
 
@@ -14,6 +15,8 @@ class Field {
   final bool obscure;
   final String? Function(String? inputtedValue) validator;
   final Widget? counter;
+  final List<TextInputFormatter>? inputFormatters;
+  final bool expandsVertically;
 
   const Field(
     this.id,
@@ -22,6 +25,8 @@ class Field {
     this.validator,
     {
       this.counter,
+      this.inputFormatters,
+      this.expandsVertically = false
     }
   );
 }
@@ -126,7 +131,9 @@ class ValidatedFormState extends State<ValidatedForm> {
           children: [
             TextFormField(
               controller: controllers[field.id]!,
+              maxLines: field.expandsVertically ? null : 1,
               key: keys[field.id],
+              inputFormatters: field.inputFormatters,
               onChanged: (String? inputtedValue) => removeErrors(),
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: field.validator,

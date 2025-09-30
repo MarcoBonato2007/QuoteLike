@@ -85,7 +85,7 @@ Future<ErrorCode?> signup(String email, String password) async {
 }
 
 Future<ErrorCode?> signout() async {
-  final log = Logger("Log out button in settings_page.dart");
+  final log = Logger("signout() in auth_functions.dart");
   showLoadingIcon();
 
   ErrorCode? error = await firebaseErrorHandler(log, doNetworkCheck: false, () async {
@@ -100,7 +100,7 @@ Future<ErrorCode?> signout() async {
 
 /// Only call this for logged in users
 Future<ErrorCode?> deleteUser() async {
-  final log = Logger("deleteUser() in settings_page.dart");
+  final log = Logger("deleteUser() in auth_functions.dart");
   showLoadingIcon();
 
   // Delete all documents in liked quotes subcollection, so as to delete the user doc
@@ -125,13 +125,15 @@ Future<ErrorCode?> deleteUser() async {
   });
 
   error ??= await firebaseErrorHandler(log, () async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+
     // Delete the user from firebase auth (this also signs out the user)
     await FirebaseAuth.instance.currentUser!.delete().timeout(Duration(seconds: 5));
 
     // Delete the uid-based timestamps
-    await RateLimits.VERIFICATION_EMAIL.deleteTimestamp(FirebaseAuth.instance.currentUser!.uid);
-    await RateLimits.QUOTE_SUGGESTION.deleteTimestamp(FirebaseAuth.instance.currentUser!.uid);
-    await RateLimits.EMAIL_CHANGE.deleteTimestamp(FirebaseAuth.instance.currentUser!.uid);
+    await RateLimits.VERIFICATION_EMAIL.deleteTimestamp(uid);
+    await RateLimits.QUOTE_SUGGESTION.deleteTimestamp(uid);
+    await RateLimits.EMAIL_CHANGE.deleteTimestamp(uid);
     
     await logEvent(Event.DELETE_USER);
   });

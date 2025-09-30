@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,7 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
       showToast(
         navigatorKey.currentContext!, // we use navigator key since the context may have changed (possible screen swap)
         ErrorCode.FAILED_ACCOUNT_DELETION.errorText + error.errorText, 
-        Duration(seconds: 5)
+        Duration(seconds: 4)
       );
     }
     else {

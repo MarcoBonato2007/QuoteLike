@@ -33,7 +33,6 @@ void main() async {
   // Setup error logging
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
-    // Level is INFO for caught errors, WARNING for unknown auth caught errors, SEVERE for unknown firestore errors
     debugPrint(
       """
       Error has been logged
@@ -119,15 +118,10 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // 30 september
-  // test losing network connection at random times, how does the program react?
-  // tons and tons of testing. try catching every error possible (firebase auth and firebase firestore).
-
   // october
   // Update the readme (include info on how to get started)
   // Check https://docs.flutter.dev/deployment/android
   // make sure all todos are done (check android folder files)
-  // change the appcheck to AndroidProvider.playIntegrity
   // use --obfuscate and --split-debug when building to make it harder to reverse engineer
   // Launch it and test there. Really try to break it.
   // is the startup issue still there?

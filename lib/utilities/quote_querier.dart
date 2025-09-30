@@ -18,7 +18,7 @@ class QuoteQuerier {
   late String _pivotPoint;
   bool _afterPivot = true; // get quotes before or after the pivot?
 
-  /// All queries get quotes only starting after lastQuoteDoc.
+  /// When filter == Filter.NONE get quotes only starting after lastQuoteDoc.
   /// This stops queries from repeating quotes.
   /// 
   /// This is set to null when we want to get the initial quotes.
@@ -29,10 +29,10 @@ class QuoteQuerier {
   /// 
   /// This is important because makeQuery() calls work in sequence.
   void refresh(Filter filter, Sort sort) {
+    _remainingLikedQuotes = {...likedQuotes}; // must go before genPivot()
     _lastQuoteDoc = null;
     _pivotPoint = genPivot(filter, sort);
     _afterPivot = true;
-    _remainingLikedQuotes = {...likedQuotes};
   }
 
   /// Generate a new pivot for the random sort
@@ -40,6 +40,7 @@ class QuoteQuerier {
     late String newPivot;
 
     final random = Random();
+
     // if randomly sorting and filtering by liked quotes, make the pivot be a random id from one of the elements
     // we can't randomly generate a string since the pool of liked quotes id's could be very small
     if (filter == Filter.LIKED && sort == Sort.RANDOM) {
@@ -61,6 +62,8 @@ class QuoteQuerier {
       // if filtering by liked quotes, we batch the liked quotes in grouops of 10 using whereIn
       // we need to do this since whereIn has a limit of 30 elements
 
+      // We also need to simulate the sorts ourselves
+      // Only none and random sort is supported (anything else would make things very difficult)
       Set<String> likedQuotesBatch = _remainingLikedQuotes.where((element) {
         if (sort != Sort.RANDOM) { // if the sort isn't random, we can take any element
           return true; 
@@ -110,7 +113,8 @@ class QuoteQuerier {
     query = applyFilter(query, filter, sort);
     query = applySort(query, sort);      
 
-    if (_lastQuoteDoc != null) {
+    // When we filter by liked, we batch already, so there's no need for _lastQuoteDoc
+    if (_lastQuoteDoc != null && filter != Filter.LIKED) {
       query = query.startAfterDocument(_lastQuoteDoc!);
     }
   
@@ -120,6 +124,9 @@ class QuoteQuerier {
     ErrorCode? error = await firebaseErrorHandler(log, () async =>
       await query.get().timeout(Duration(seconds: 5)).then((QuerySnapshot querySnapshot) {
         queryResults = querySnapshot.docs;
+        if (queryResults.isNotEmpty) {
+          _lastQuoteDoc = queryResults.last;
+        }
       }).timeout(Duration(seconds: 5))
     );
 
@@ -130,7 +137,7 @@ class QuoteQuerier {
   
     // if we've reached no more quotes after the pivot while sorting randomly, 
     // then we start querying again but this time using afterPivot = false
-    if (queryResults.isEmpty && sort == Sort.RANDOM && _afterPivot) {
+    if (error == null && queryResults.isEmpty && sort == Sort.RANDOM && _afterPivot) {
       _afterPivot = false; // wrap back to beginning, go to before pivot
       _lastQuoteDoc = null;
       (error, queryResults) = await makeQuery(filter, sort);

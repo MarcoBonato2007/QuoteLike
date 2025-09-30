@@ -12,7 +12,7 @@ enum ErrorCode {
   UNKNOWN_ERROR("An unknown error occurred."),
   INCORRECT_CREDENTIALS("Incorrect email or password."),
   TIMEOUT("Request timed out. Check your connnection or try again later."),
-  RECENT_PASSWORD_RESET("You have already requested a password reset in the past hour."),
+  RECENT_PASSWORD_RESET("You have already requested a password reset for this email in the past hour."),
   RECENT_VERIFICATION_EMAIL("A verification email was already sent recently. Check your inbox and spam folder."),
   RECENT_EMAIL_CHANGE("An email change was already requested in the past day."),
   RECENT_SUGGESTION("You have already made a suggestion in the past hour."),

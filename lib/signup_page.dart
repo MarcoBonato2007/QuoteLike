@@ -68,7 +68,7 @@ class _SignupPageState extends State<SignupPage>{
           return "Password must contain a lowercase letter";
         }
         else if (!RegExp(r'[A-Z]').hasMatch(currentValue)) {
-          return "Password must contain an uppercae letter";
+          return "Password must contain an uppercase letter";
         }
         else if (!RegExp(r'[0-9]').hasMatch(currentValue)) {
           return "Password must contain a digit";

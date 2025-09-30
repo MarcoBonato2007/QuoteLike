@@ -15,11 +15,9 @@ import 'package:quotelike/utilities/enums.dart';
 /// This is used to access the new context after a login/logout (since that causes a screen switch)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-/// We maintain a local copy of the user's list of liked quotes.
+/// We maintain a local global copy of the user's list of liked quotes.
 /// This avoids having to constantly re-fetch this from the server.
-/// 
-/// This is initialized in explore_page.dart, and updated in quote_card.dart
-Set<String> likedQuotes = {};
+Set<String> likedQuotes = <String>{};
 
 /// Shows a non user dismissable CircularProgressIndicator() overlay
 void showLoadingIcon() {

@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: constant_identifier_names
 
 import 'dart:convert';
 
@@ -72,22 +72,22 @@ class RateLimit {
 }
 
 class RateLimits {
-  static RateLimit PASSWORD_RESET_EMAIL = RateLimit(
+  static const RateLimit PASSWORD_RESET_EMAIL = RateLimit(
     "Password reset email", 
     Duration(minutes: 59),
     ErrorCode.RECENT_PASSWORD_RESET
   );
-  static RateLimit VERIFICATION_EMAIL = RateLimit(
+  static const RateLimit VERIFICATION_EMAIL = RateLimit(
     "Verification email", 
     Duration(hours: 70),
     ErrorCode.RECENT_VERIFICATION_EMAIL
   );
-  static RateLimit EMAIL_CHANGE = RateLimit(
+  static const RateLimit EMAIL_CHANGE = RateLimit(
     "Changing email", 
     Duration(hours: 23),
     ErrorCode.RECENT_EMAIL_CHANGE
   );
-  static RateLimit QUOTE_SUGGESTION = RateLimit(
+  static const RateLimit QUOTE_SUGGESTION = RateLimit(
     "Quote suggestion", 
     Duration(minutes: 59),
     ErrorCode.RECENT_SUGGESTION

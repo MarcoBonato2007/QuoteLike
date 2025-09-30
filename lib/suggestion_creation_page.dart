@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:quotelike/utilities/enums.dart';
 import 'package:quotelike/utilities/db_functions.dart' as db_functions;
@@ -56,7 +57,11 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
         else {
           return null;
         }
-      }  
+      },
+      inputFormatters: [
+        LengthLimitingTextInputFormatter(250)
+      ],
+      expandsVertically: true
     );
 
     _authorField = Field(
@@ -73,7 +78,11 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
         else {
           return null;
         }
-      }   
+      },
+      inputFormatters: [
+        LengthLimitingTextInputFormatter(100)
+      ],
+      expandsVertically: true
     );
 
     final quoteCreationForm = ValidatedForm(
