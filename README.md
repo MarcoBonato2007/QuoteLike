@@ -71,22 +71,22 @@ service cloud.firestore {
       		// The user is logged in and verified
         	// They are updating the likes of a quote only
         	// The likes are changing by 1 or -1 and the user hasn't or has liked the quote already
-			allow update: if
-			request.auth != null
-			&& request.auth.token.email_verified
-			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])
-			&& request.resource.data.likes is int
-			&& (
-				(
-				request.resource.data.likes-resource.data.likes == 1
-				&& !exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
-				)
-			|| 
-				(
-				request.resource.data.likes-resource.data.likes == -1
-				&& exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
-				)
-			);
+		allow update: if
+		request.auth != null
+		&& request.auth.token.email_verified
+		&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])
+		&& request.resource.data.likes is int
+		&& (
+			(
+			request.resource.data.likes-resource.data.likes == 1
+			&& !exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
+			)
+		|| 
+			(
+			request.resource.data.likes-resource.data.likes == -1
+			&& exists(/databases/$(database)/documents/users/$(request.auth.uid)/liked_quotes/$(resource.id))
+			)
+		);
     }
     
     // for suggestions, allow creation only if:
