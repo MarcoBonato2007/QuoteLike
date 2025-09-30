@@ -161,6 +161,7 @@ Users may additionally request the following (again by contacting an administrat
 - An email change email
 - A verification email  
 - Changes or additions to liked quotes or suggestions
+
 Please note: these requests will usually be granted, but are up to the discretion of the administrators.
 
 # Contact
