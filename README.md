@@ -3,7 +3,7 @@
 Lets you scroll quotes like a social media to build a collection of those you like.
 
 ## Copying the project for yourself
-Various important things are .gitignored, so the project will NOT work for you out of the box. To copy this project, create your own flutter project, your own firebase project (set it up in flutter using flutterfire), and manually import the files contained in lib. Then, follow the instructions below.
+For various reasons, the project will NOT work for you out of the box (i.e. don't just blindly clone this repo and expect it to work). To copy this project, create your own flutter project, your own firebase project (set it up in flutter using flutterfire), and manually import the files contained in lib. Then, follow the instructions below.
 
 ### Auth setup
 Email/password login must be enabled in Firebase auth. Please ensure that email enumeration protection is enabled, and check your password policy (ours below).
