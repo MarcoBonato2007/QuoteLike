@@ -3,7 +3,7 @@
 Lets you scroll quotes like a social media to build a collection of those you like.
 
 ## Copying the project for yourself
-Various important things are .gitignored, so the project will NOT work for you out of the box. To copy this project, create your own flutter project, your own firebase project (set it up in flutter using flutterfire), and manually import the files contained in lib. Then, follow the instructions below.
+For various reasons, the project will NOT work for you out of the box (i.e. don't just blindly clone this repo and expect it to work). To copy this project, create your own flutter project, your own firebase project (set it up in flutter using flutterfire), and manually import the files contained in lib. Then, follow the instructions below.
 
 ### Auth setup
 Email/password login must be enabled in Firebase auth. Please ensure that email enumeration protection is enabled, and check your password policy (ours below).
@@ -24,7 +24,7 @@ There are only 3 collections: quotes, suggestions and users.
 **Important**: some of the database structure is enforced by the firestore security rules. Please modify these before creating new collections, using fields with different names, etc.
 
 #### Quotes
-The quotes collection may contain a placeholder document. If so, please call it "placeholder" (otherwise you may encounter issues when fetching quotes in explore_page.dart). Shown below is example structure for a quote document.
+Shown below is example structure for a quote document.
 
 <img width="2715" height="655" alt="image" src="https://github.com/user-attachments/assets/1a959293-557d-4c4f-bec7-11f4afaddca8" />
 
@@ -34,7 +34,7 @@ Shown below is an example suggestion document. The user field should match the u
 <img width="2712" height="625" alt="image" src="https://github.com/user-attachments/assets/a4004f1d-ddb4-4d29-a9ba-fbdb17d0cca8" />
 
 #### Users
-All document id's (except for "placeholder") are equal to a user uid in firebase auth (e.g. "PyglU5gUl3ONAEs8HqFEzmVmGr52"). User documents don't actually exist (i.e. have no fields), they only contain a "liked_quotes" subcollection. Shown below is an example.
+All document id's are equal to a user uid in firebase auth (e.g. "PyglU5gUl3ONAEs8HqFEzmVmGr52"). User documents don't actually exist (i.e. have no fields), they only contain a "liked_quotes" subcollection. Shown below is an example.
 
 <img width="2732" height="588" alt="image" src="https://github.com/user-attachments/assets/c51dc3a3-d6ba-44e6-a458-41db8f6d6ea7" />
 
