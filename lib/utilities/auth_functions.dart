@@ -31,8 +31,16 @@ Future<ErrorCode?> sendEmailVerification(User user) async {
 Future<ErrorCode?> forgotPassword(String email) async {
   final log = Logger("forgotPassword() in auth_functions.dart");
   showLoadingIcon();
+  ErrorCode? error;
+
+  // First reload any logged in and verified user (email could have been changed)
+  if (FirebaseAuth.instance.currentUser != null && FirebaseAuth.instance.currentUser!.emailVerified) {
+    error ??= await firebaseErrorHandler(log, () async {
+      await FirebaseAuth.instance.currentUser!.reload();
+    });
+  }
   
-  ErrorCode? error = await RateLimits.PASSWORD_RESET_EMAIL.testCooldown(email);
+  error ??= await RateLimits.PASSWORD_RESET_EMAIL.testCooldown(email);
   error ??= await firebaseErrorHandler(log, () async {
     await FirebaseAuth.instance.sendPasswordResetEmail(email: email).timeout(Duration(seconds: 5));
     await logEvent(Event.SEND_PASSWORD_RESET);

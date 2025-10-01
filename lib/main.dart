@@ -118,18 +118,11 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Polish
-  // october
-  // Update the readme (include info on how to get started)
-  // Check https://docs.flutter.dev/deployment/android
-  // make sure all todos are done (check android folder files)
-  // use --obfuscate and --split-debug when building to make it harder to reverse engineer
-  // Launch it and test there. Really try to break it.
-  // is the startup issue still there?
-
   // Note: be VERY careful updating any packages or dependencies.
   // In the past, this caused firebase to not print debug app check tokens (very annoying to fix!)
 
   // In future: 
     // try to fix the failed to get service from broker and deprecation errors
     // add a search bar (would need to be starts with only, and has case sensitivity issues)
+    // implement sorting by recent, most liked and least liked when filtering by liked quotes
     // remember to update the version in pubspec.yaml
