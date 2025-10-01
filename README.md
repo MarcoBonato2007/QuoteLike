@@ -1,4 +1,5 @@
 # QuoteLike
+![Google Play Store](https://img.shields.io/badge/Google_Play-414141?logo=google-play&logoColor=white)
 
 Lets you scroll quotes like a social media to build a collection of those you like.
 
