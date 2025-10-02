@@ -1,4 +1,4 @@
-# Deleting your account
+# Deleting your account or data
 ## Deleting your account in the app
 To delete your account, please:
 1. Log in with that account in the quotelike app on your phone
@@ -16,8 +16,8 @@ In the case where you are unable to delete your account in-app, or wish to delet
 Current administrators & email addresses:
 - Marco Bonato (Owner & Developer): marcobonato2007@gmail.com
 
-## What data is kept?
-If you request a normal account deletion, the only data kept about you will be the quote suggestions you made. These contain:
+## What data is removed/kept?
+If you request a normal account deletion (e.g. through the app), the only remaining data kept about you will be the quote suggestions you made. These contain:
 - The quote content
 - The quote author
 - Your user id
