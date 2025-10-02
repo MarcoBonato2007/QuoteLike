@@ -43,7 +43,7 @@ class QuoteQuerier {
 
     // if randomly sorting and filtering by liked quotes, make the pivot be a random id from one of the elements
     // we can't randomly generate a string since the pool of liked quotes id's could be very small
-    if (filter == Filter.LIKED && sort == Sort.RANDOM) {
+    if (filter == Filter.LIKED && sort == Sort.RANDOM && likedQuotes.isNotEmpty) {
       int randomIndex = random.nextInt(likedQuotes.length);
       newPivot = likedQuotes.elementAt(randomIndex);
     }

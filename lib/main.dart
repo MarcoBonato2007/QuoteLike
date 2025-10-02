@@ -117,12 +117,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Polish
-  // Note: be VERY careful updating any packages or dependencies.
-  // In the past, this caused firebase to not print debug app check tokens (very annoying to fix!)
+// Note: be careful updating any packages or dependencies.
+// In the past, this caused firebase to not print debug app check tokens
+
+// Notes to myself
+  // To read obfuscated crashlytics stacktraces, decode them using the .symbols files
 
   // In future: 
     // try to fix the failed to get service from broker and deprecation errors
+    // custom quotes feature
     // add a search bar (would need to be starts with only, and has case sensitivity issues)
     // implement sorting by recent, most liked and least liked when filtering by liked quotes
     // remember to update the version in pubspec.yaml

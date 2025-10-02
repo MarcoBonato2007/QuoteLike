@@ -31,6 +31,7 @@ Future<ErrorCode?> sendEmailVerification(User user) async {
 Future<ErrorCode?> forgotPassword(String email) async {
   final log = Logger("forgotPassword() in auth_functions.dart");
   showLoadingIcon();
+  
   ErrorCode? error;
 
   // First reload any logged in and verified user (email could have been changed)

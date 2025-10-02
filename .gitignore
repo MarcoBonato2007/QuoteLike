@@ -2,6 +2,8 @@
 firebase.json
 /android/app/google-services.json
 /lib/utilities/firebase_options.dart
+logs
+.crashlytics
 
 # Miscellaneous
 *.class

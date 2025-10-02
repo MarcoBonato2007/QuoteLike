@@ -113,7 +113,6 @@ class _SuggestionCreationPageState extends State<SuggestionCreationPage> {
             width: MediaQuery.of(context).size.width,
             child: quoteCreationForm
           ),
-          SizedBox(height: 5),
         ]
       ),
     );
