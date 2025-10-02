@@ -118,7 +118,7 @@ class _QuoteCardState extends State<QuoteCard> with TickerProviderStateMixin {
           Align(
             alignment: Alignment.centerLeft, 
             child: ReadMoreText(
-              '“${widget.quote}”', 
+              '"${widget.quote}"', 
               trimLength: 100,
               textAlign: TextAlign.start,
               style: TextStyle(fontSize: 20), 

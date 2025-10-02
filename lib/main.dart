@@ -128,6 +128,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // In future: 
     // try to fix the failed to get service from broker and deprecation errors
     // custom quotes feature
+    // feature to click on an author and see all their quotes
+    // addition of tags to quotes that you can filter by
     // add a search bar (would need to be starts with only, and has case sensitivity issues)
     // implement sorting by recent, most liked and least liked when filtering by liked quotes
     // remember to update the version in pubspec.yaml
