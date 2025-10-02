@@ -23,16 +23,16 @@ enum ErrorCode {
 }
 
 enum Event {
-  LOGIN("Login"),
-  APP_OPEN("App open"),
-  SIGN_UP("Sign up"),
-  ADD_SUGGESTION("Added suggestion"),
-  SEND_EMAIL_VERIFICATION("Send email verification"),
-  SEND_PASSWORD_RESET("Send password reset email"),
-  LOGOUT("Log out"),
-  DELETE_LIKED_QUOTES("Delete all liked quotes"),
-  DELETE_USER("Delete user from firebase auth"),
-  CHANGE_EMAIL("Send a change email request email");
+  LOGIN("login"),
+  APP_OPEN("app_open"),
+  SIGN_UP("sign_up"),
+  ADD_SUGGESTION("add_suggestion"),
+  SEND_EMAIL_VERIFICATION("send_email_verification"),
+  SEND_PASSWORD_RESET("send_password_reset_email"),
+  LOGOUT("log_out"),
+  DELETE_LIKED_QUOTES("delete_liked_quotes"),
+  DELETE_USER("delete_user"),
+  CHANGE_EMAIL("send_email_change_email");
 
   final String eventName;
   const Event(this.eventName);

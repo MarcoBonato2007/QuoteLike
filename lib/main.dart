@@ -121,6 +121,8 @@ class _MyHomePageState extends State<MyHomePage> {
 // In the past, this caused firebase to not print debug app check tokens
 
 // Notes to myself
+  // to build, do flutter build appbundle --obfuscaate --split-debug-info=logs
+    // remember to update version and build number in pubspec.yaml before
   // To read obfuscated crashlytics stacktraces, decode them using the .symbols files
 
   // In future: 
