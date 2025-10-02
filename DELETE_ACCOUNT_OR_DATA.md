@@ -3,7 +3,7 @@
 To delete your account, please:
 1. Log in with that account in the quotelike app on your phone
 2. Navigate to the settings page
-3. Click the delete account button, and continue with through the confirmation dialog
+3. Click the delete account button, and continue through the confirmation dialog
 
 You may be asked to sign out and back in again for security reasons at first, and have to re-attempt the deletion.
 
