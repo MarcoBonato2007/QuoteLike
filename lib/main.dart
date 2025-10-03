@@ -126,7 +126,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // To read obfuscated crashlytics stacktraces, decode them using the .symbols files
 
   // In future: 
-    // try to fix the failed to get service from broker and deprecation errors
+    // Allow deletion of suggestions you made when you delete your account (currently they are kept)
+    // fix deprecation errors
     // custom quotes feature
     // feature to click on an author and see all their quotes
     // addition of tags to quotes that you can filter by
