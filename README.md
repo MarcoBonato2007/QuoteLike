@@ -4,7 +4,7 @@
 Lets you scroll quotes like a social media to build a collection of those you like.
 
 ## Downloading the app
-To use the app, please join the google group using the link in the website section of this repo.
+To use the app, please join the google group using the link in the about section of this repo.
 
 Currently the app is in a closed test, but it may launch on the global play store eventually.
 
