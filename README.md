@@ -3,6 +3,11 @@
 
 Lets you scroll quotes like a social media to build a collection of those you like.
 
+## Downloading the app
+To use the app, please join the google group using the link in the about section of this repo for instructions.
+
+Currently the app is in a closed test, but it may launch on the global play store eventually.
+
 ## Copying the project for yourself
 For various reasons, the project will NOT work for you out of the box (i.e. don't just blindly clone this repo and expect it to work). To copy this project, create your own flutter project, your own firebase project (set it up in flutter using flutterfire), and manually import the files contained in lib. Then, follow the instructions below.
 
